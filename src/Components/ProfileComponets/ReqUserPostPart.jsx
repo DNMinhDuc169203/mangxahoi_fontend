@@ -26,6 +26,7 @@ const ReqUserPostPart = () => {
       <div className="flex space-x-14 border-t relative">
         {tabs.map((item) => (
           <div
+            key={item.tab}
             onClick={() => setActiveTab(item.tab)}
             className={` ${
               activeTab === item.tab ? "border-t border-black" : "opacity-60"
@@ -38,7 +39,7 @@ const ReqUserPostPart = () => {
       </div>
       <div>
         <div className="flex flex-wrap">
-            {[1,1,1,1,1,1].map((item)=><ReqUserPostCard/>)}
+            {[1,1,1,1,1,1].map((item, idx)=><ReqUserPostCard key={idx} />)}
         </div>
       </div>
     </div>
