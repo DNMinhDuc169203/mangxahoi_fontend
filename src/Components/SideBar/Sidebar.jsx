@@ -38,7 +38,7 @@ const [isSearchVisible, setIsSearchVisible]= useState(false);
           {activeTab !=="Search" &&<div className="pt-10">
             <img
               className="w-40"
-              src="https://i.imgur.com/zqpwkLQ.png"
+              src="/toptrend.png"
               alt=""
             />
           </div>}

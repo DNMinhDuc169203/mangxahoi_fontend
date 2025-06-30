@@ -123,6 +123,24 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
             </Flex>
             <VStack align="start" spacing={4} flex={1} overflowY="auto" maxH="320px">
               <Text>{post.noiDung}</Text>
+              {post.hashtags && post.hashtags.length > 0 && (
+                <Flex gap={2} flexWrap="wrap" mt={1}>
+                  {post.hashtags.map((tag, idx) => (
+                    <Box
+                      key={idx}
+                      px={2}
+                      py={0.5}
+                      bg="blue.50"
+                      color="blue.600"
+                      borderRadius="md"
+                      fontSize="sm"
+                      fontWeight="bold"
+                    >
+                      {tag.startsWith('#') ? tag : `#${tag}`}
+                    </Box>
+                  ))}
+                </Flex>
+              )}
               {/* Like & comment count */}
               <Flex align="center" gap={6} mt={2} mb={2}>
                 <Flex align="center" gap={1}><AiFillHeart color="red" /> <span>{post.soLuotThich || 0}</span></Flex>

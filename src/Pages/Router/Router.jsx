@@ -3,7 +3,7 @@ import Sidebar from "../../Components/SideBar/Sidebar";
 import HomePage from "../HomePage/HomePage";
 import { Route, Routes, useLocation } from "react-router-dom";
 import Profile from "../Profile/Profile";
-import Story from "../Story/Story";
+
 import Login from "../Login/Login";
 import Register from "../Register/Register";
 import Verify from "../Verify/Verify";
@@ -33,7 +33,7 @@ const Router = () => {
           <Routes>
             <Route path="/" element={<HomePage />} > </Route>
             <Route path="/username" element={<Profile />} > </Route>
-            <Route path="/story" element={<Story />} > </Route>
+          
             <Route path="/login" element={<Login />} > </Route>
             <Route path="/register" element={<Register />} > </Route>
             <Route path="/verify" element={<Verify />} />
