@@ -15,7 +15,6 @@ import {
   useDisclosure,
   useToast,
   Box,
-  Text,
   VStack,
   Switch,
   FormControl,
@@ -59,6 +58,7 @@ export const ProfileUserDetails = () => {
           ngaySinhCongKhai: res.data.ngaySinhCongKhai,
           gioiTinhCongKhai: res.data.gioiTinhCongKhai,
         });
+        localStorage.setItem("user", JSON.stringify(res.data));
       })
       .catch(() => setError("Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn."));
   };
