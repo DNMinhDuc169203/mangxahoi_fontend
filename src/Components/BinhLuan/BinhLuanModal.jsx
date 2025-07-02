@@ -13,11 +13,11 @@ import {
   BsEmojiSmile,
   BsThreeDots,
 } from "react-icons/bs";
-import CommentCard from "./CommentCard";
+import CommentCard from "./TheBinhLuan";
 import { AiFillHeart, AiOutlineHeart } from "react-icons/ai";
 import { FaRegComment } from "react-icons/fa";
 import { RiSendPlaneLine } from "react-icons/ri";
-import "./CommentModal.css";
+import "./BinhLuanModal.css";
 
 const CommentModal = ({
   onClose,
