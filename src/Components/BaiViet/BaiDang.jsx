@@ -5,7 +5,7 @@ import {
   BsEmojiSmile,
   BsThreeDots,
 } from "react-icons/bs";
-import "./PostCard.css";
+import "./BaiDang.css";
 import { AiFillHeart, AiOutlineHeart } from "react-icons/ai";
 import { FaRegComment } from "react-icons/fa";
 import { RiSendPlaneLine } from "react-icons/ri";

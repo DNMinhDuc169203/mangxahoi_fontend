@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useDisclosure } from '@chakra-ui/react';
-import CreatePostModal from './CreatePostModal';
+import CreatePostModal from './TaoBaiDangModal';
 import axios from 'axios';
 
 const BanDangNghiGi = () => {

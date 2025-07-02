@@ -1,6 +1,6 @@
 import React from "react";
-import "./SearchComponents.css";
-import SearchUserCard from "./SearchUserCard";
+import "./TimKiem.css";
+import SearchUserCard from "./TimKiemNguoiDung";
 
 const SearchComponents = () => {
   return (

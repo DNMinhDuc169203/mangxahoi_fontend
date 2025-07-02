@@ -10,7 +10,7 @@ import {
 } from "@chakra-ui/react";
 import React, { useState, useEffect } from "react";
 import { FaPhotoVideo } from "react-icons/fa";
-import "./CreatePostmodal.css";
+import "./TaoBaiDangModal.css";
 import { GrEmoji } from "react-icons/gr"
 import { GoLocation } from "react-icons/go"
 import { AiOutlineClose } from "react-icons/ai";

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { AiOutlineTable, AiOutlineUser } from "react-icons/ai";
 import { BiBookmark } from "react-icons/bi";
 import { RiVideoAddLine } from "react-icons/ri";
-import ReqUserPostCard from "./ReqUserPostCard";
+import ReqUserPostCard from "./ChiTietBaiVietNguoiDung";
 import axios from "axios";
-import PostDetailModal from "./PostDetailModal";
+import PostDetailModal from "./BaiDangChiTietModal";
 
 const ReqUserPostPart = () => {
   const [activeTab, setActiveTab] = useState("Post");

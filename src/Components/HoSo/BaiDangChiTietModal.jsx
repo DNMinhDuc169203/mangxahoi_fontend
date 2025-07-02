@@ -1,25 +1,39 @@
 import React, { useState } from 'react';
 import { Modal, ModalOverlay, ModalContent, ModalCloseButton, ModalBody, Box, Image, Text, Avatar, Flex, VStack, IconButton, Input, Button, Icon, HStack } from '@chakra-ui/react';
-import { AiFillHeart, AiOutlineLeft, AiOutlineRight } from 'react-icons/ai';
-import { FaComment, FaRegSmile } from 'react-icons/fa';
+import { AiFillHeart, AiOutlineLeft, AiOutlineRight, AiOutlineGlobal, AiFillLock } from 'react-icons/ai';
+import { FaComment, FaRegSmile, FaUserFriends } from 'react-icons/fa';
 import { BsThreeDots } from 'react-icons/bs';
+import axios from "axios";
 
 const PostDetailModal = ({ post, isOpen, onClose }) => {
   const [currentImg, setCurrentImg] = useState(0);
-  const [comments, setComments] = useState([
-    { userName: 'Quỳnh Hồ', text: '❤️', avatar: '/anhbandau.jpg', time: '1 năm', },
-    { userName: 'Đặng Linh', text: '❤️‍🔥\n❤️', avatar: '/anhbandau.jpg', time: '1 năm', },
-    { userName: 'User 3', text: 'Đẹp quá!', avatar: '/anhbandau.jpg', time: '1 năm', },
-    { userName: 'User 4', text: 'Tủ này xịn ghê', avatar: '/anhbandau.jpg', time: '1 năm', },
-  ]);
+  const [comments, setComments] = useState([]);
+  const [totalComments, setTotalComments] = useState(0);
+  const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [showAll, setShowAll] = useState(false);
   const maxShow = 2;
-  const totalComments = comments.length;
   const shownComments = showAll ? comments : comments.slice(0, maxShow);
 
   React.useEffect(() => {
     setCurrentImg(0);
+  }, [post]);
+
+  // Lấy bình luận động từ API khi post thay đổi
+  React.useEffect(() => {
+    if (!post?.id) return;
+    setLoadingComments(true);
+    axios
+      .get(`http://localhost:8080/api/binh-luan/bai-viet/${post.id}?page=0&size=100`)
+      .then(res => {
+        setComments(res.data.binhLuan || []);
+        setTotalComments(res.data.tongSoBinhLuan || 0);
+      })
+      .catch(() => {
+        setComments([]);
+        setTotalComments(0);
+      })
+      .finally(() => setLoadingComments(false));
   }, [post]);
 
   if (!post) return null;
@@ -40,6 +54,32 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
     if (!newComment.trim()) return;
     setComments([...comments, { userName: 'Bạn', text: newComment }]);
     setNewComment("");
+  };
+
+  // Hàm render chế độ bài viết
+  const renderCheDo = (cheDo) => {
+    switch (cheDo) {
+      case 'cong_khai':
+        return (
+          <Flex align="center" gap={1} color="gray.500" fontSize="sm" px={2} py={0.5} bg="gray.100" borderRadius="md">
+            <AiOutlineGlobal /> Công khai
+          </Flex>
+        );
+      case 'ban_be':
+        return (
+          <Flex align="center" gap={1} color="gray.500" fontSize="sm" px={2} py={0.5} bg="gray.100" borderRadius="md">
+            <FaUserFriends /> Bạn bè
+          </Flex>
+        );
+      case 'rieng_tu':
+        return (
+          <Flex align="center" gap={1} color="gray.500" fontSize="sm" px={2} py={0.5} bg="gray.100" borderRadius="md">
+            <AiFillLock /> Riêng tư
+          </Flex>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -117,9 +157,13 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
           </Box>
           {/* Thông tin bên phải */}
           <Box flex="1.2" p={6} minW="350px" display="flex" flexDirection="column" position="relative">
-            <Flex align="center" mb={4} gap={3}>
-              <Avatar size="md" src={post.anhDaiDienNguoiDung} name={post.hoTenNguoiDung} />
-              <Text fontWeight="bold">{post.hoTenNguoiDung}</Text>
+            <Flex align="center" mb={4} gap={3} justify="space-between">
+              <Flex align="center" gap={2}>
+                <Avatar size="md" src={post.anhDaiDienNguoiDung} name={post.hoTenNguoiDung} />
+                <Text fontWeight="bold">{post.hoTenNguoiDung}</Text>
+                {renderCheDo(post.cheDoRiengTu)}
+              </Flex>
+              {/* Nút ba chấm đã có ở góc phải */}
             </Flex>
             <VStack align="start" spacing={4} flex={1} overflowY="auto" maxH="320px">
               <Text>{post.noiDung}</Text>
@@ -152,26 +196,32 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
                   <Text fontWeight="bold">Bình luận</Text>
                   <Text fontSize="sm" color="gray.500">{shownComments.length}/{totalComments}</Text>
                 </Flex>
-                {shownComments.map((c, idx) => (
-                  <Box key={idx} mb={2}>
-                    <Flex align="center" gap={2}>
-                      <Avatar src={c.avatar} name={c.userName} size="sm" />
-                      <Text fontWeight="bold" fontSize="sm">{c.userName}</Text>
-                      <Box flex={1} />
-                      <IconButton icon={<Box as="span" fontSize="xl">...</Box>} variant="ghost" size="xs" aria-label="menu" />
-                    </Flex>
-                    <Box ml={10} fontSize="md" whiteSpace="pre-line">{c.text}</Box>
-                    <Flex ml={10} align="center" gap={3} fontSize="xs" color="gray.500" mt={0.5}>
-                      <Text>{c.time}</Text>
-                      <Text fontWeight="bold" cursor="pointer">Thích</Text>
-                      <Text fontWeight="bold" cursor="pointer">Trả lời</Text>
-                    </Flex>
-                  </Box>
-                ))}
-                {!showAll && totalComments > maxShow && (
-                  <Text ml={2} mt={2} color="blue.500" fontWeight="bold" cursor="pointer" onClick={() => setShowAll(true)}>
-                    Xem thêm bình luận
-                  </Text>
+                {loadingComments ? (
+                  <Text color="gray.400" fontSize="sm" textAlign="center">Đang tải bình luận...</Text>
+                ) : (
+                  <>
+                    {shownComments.map((c, idx) => (
+                      <Box key={c.id || idx} mb={2}>
+                        <Flex align="center" gap={2}>
+                          <Avatar src={c.nguoiDung?.anhDaiDien || "/anhbandau.jpg"} name={c.nguoiDung?.hoTen || "Ẩn danh"} size="sm" />
+                          <Text fontWeight="bold" fontSize="sm">{c.nguoiDung?.hoTen || "Ẩn danh"}</Text>
+                          <Box flex={1} />
+                          <IconButton icon={<Box as="span" fontSize="xl">...</Box>} variant="ghost" size="xs" aria-label="menu" />
+                        </Flex>
+                        <Box ml={10} fontSize="md" whiteSpace="pre-line">{c.noiDung}</Box>
+                        <Flex ml={10} align="center" gap={3} fontSize="xs" color="gray.500" mt={0.5}>
+                          <Text>{c.ngayTao ? new Date(c.ngayTao).toLocaleDateString() : ""}</Text>
+                          <Text fontWeight="bold" cursor="pointer">Thích</Text>
+                          <Text fontWeight="bold" cursor="pointer">Trả lời</Text>
+                        </Flex>
+                      </Box>
+                    ))}
+                    {!showAll && totalComments > maxShow && (
+                      <Text ml={2} mt={2} color="blue.500" fontWeight="bold" cursor="pointer" onClick={() => setShowAll(true)}>
+                        Xem thêm bình luận
+                      </Text>
+                    )}
+                  </>
                 )}
               </Box>
             </VStack>

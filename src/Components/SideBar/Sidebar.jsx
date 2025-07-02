@@ -3,8 +3,8 @@ import { IoReorderThreeOutline } from "react-icons/io5";
 import { menu } from "./SidebarConfig";
 import { useNavigate } from "react-router-dom";
 import { useDisclosure } from "@chakra-ui/react";
-import CreatePostModal from "../Post/CreatePostModal";
-import SearchComponents from "../SearchComponents/SearchComponents";
+import CreatePostModal from "../BaiViet/TaoBaiDangModal";
+import SearchComponents from "../TimKiem/TimKiem";
 
 const Sidebar = () => {
 const [activeTab,setActiveTab]= useState();

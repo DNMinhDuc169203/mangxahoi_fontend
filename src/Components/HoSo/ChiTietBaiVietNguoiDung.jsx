@@ -1,7 +1,7 @@
 import React from 'react'
 import { AiFillHeart } from 'react-icons/ai'
 import { FaComment } from 'react-icons/fa'
-import "./ReqUserPostCard.css"
+import "./ChiTietBaiVietNguoiDung.css"
 
 const ReqUserPostCard = ({ post, onClick }) => {
   const hasImage = post.mediaUrls && post.mediaUrls.length > 0;

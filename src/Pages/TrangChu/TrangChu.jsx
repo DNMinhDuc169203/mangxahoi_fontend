@@ -1,10 +1,10 @@
 import React from "react";
 
-import HomeRight from "../../Components/HomeRight/HomeRight";
-import PostCard from "../../Components/Post/PostCard";
-import CreatePostModal from "../../Components/Post/CreatePostModal";
+import HomeRight from "../../Components/TrangChuPhai/TrangChuBenPhai";
+import PostCard from "../../Components/BaiViet/BaiDang";
+import CreatePostModal from "../../Components/BaiViet/TaoBaiDangModal";
 import { useDisclosure } from "@chakra-ui/react";
-import BanDangNghiGi from "../../Components/Post/BanDangNghiGi";
+import BanDangNghiGi from "../../Components/BaiViet/BanDangNghiGi";
 
 const HomePage = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()

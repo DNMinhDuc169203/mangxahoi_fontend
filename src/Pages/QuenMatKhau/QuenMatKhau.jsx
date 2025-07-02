@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./ForgotPassword.css";
+import "./QuenMatKhau.css";
 import axios from "axios";
 import { useToast } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";

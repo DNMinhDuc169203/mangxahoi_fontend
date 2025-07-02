@@ -1,13 +1,13 @@
 import React from "react";
 import Sidebar from "../../Components/SideBar/Sidebar";
-import HomePage from "../HomePage/HomePage";
+import HomePage from "../TrangChu/TrangChu";
 import { Route, Routes, useLocation } from "react-router-dom";
-import Profile from "../Profile/Profile";
+import Profile from "../HoSo/HoSo";
 
-import Login from "../Login/Login";
-import Register from "../Register/Register";
-import Verify from "../Verify/Verify";
-import ForgotPassword from "../ForgotPassword/ForgotPassword";
+import Login from "../DangNhap/DangNhap";
+import Register from "../DangKy/DangKy";
+import Verify from "../XacThuc/XacThuc";
+import ForgotPassword from "../QuenMatKhau/QuenMatKhau";
 
 const Router = () => {
   const location = useLocation();
