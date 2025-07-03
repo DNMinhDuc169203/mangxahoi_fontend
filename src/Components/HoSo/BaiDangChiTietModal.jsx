@@ -5,6 +5,26 @@ import { FaComment, FaRegSmile, FaUserFriends } from 'react-icons/fa';
 import { BsThreeDots } from 'react-icons/bs';
 import axios from "axios";
 
+function formatTimeAgo(dateString) {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffDay >= 1) {
+    return `${diffDay} ngày trước`;
+  } else if (diffHour >= 1) {
+    return `${diffHour} giờ trước`;
+  } else if (diffMin >= 1) {
+    return `${diffMin} phút trước`;
+  } else {
+    return `Vừa xong`;
+  }
+}
+
 const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
   const [currentImg, setCurrentImg] = useState(0);
   const [comments, setComments] = useState([]);
@@ -65,6 +85,22 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
     });
     // eslint-disable-next-line
   }, [comments]);
+
+  // Reset state khi modal đóng
+  useEffect(() => {
+    if (!isOpen) {
+      setComments([]);
+      setReplies({});
+      setReplyBox({});
+      setShowAllReplies({});
+      setLoadingReplies({});
+      setNewComment("");
+      setCurrentImg(0);
+      setShowAll(false);
+      setLoadingComments(false);
+      // Nếu có thêm state nào liên quan, reset ở đây
+    }
+  }, [isOpen]);
 
   if (!post) return null;
 
@@ -279,7 +315,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
         </Flex>
         <Box ml={level === 0 ? 10 : 8} fontSize={level === 0 ? "md" : "sm"} whiteSpace="pre-line">{comment.noiDung}</Box>
         <Flex ml={level === 0 ? 10 : 8} align="center" gap={3} fontSize="xs" color="gray.500" mt={0.5}>
-          <Text>{comment.ngayTao ? new Date(comment.ngayTao).toLocaleDateString() : ""}</Text>
+          <Text>{comment.ngayTao ? formatTimeAgo(comment.ngayTao) : ""}</Text>
           <Text
             fontWeight="bold"
             cursor="pointer"
@@ -419,10 +455,16 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
           {/* Thông tin bên phải */}
           <Box flex="1.2" p={6} minW="350px" display="flex" flexDirection="column" position="relative">
             <Flex align="center" mb={4} gap={3} justify="space-between">
-              <Flex align="center" gap={2}>
-                <Avatar size="md" src={post.anhDaiDienNguoiDung} name={post.hoTenNguoiDung} />
-                <Text fontWeight="bold">{post.hoTenNguoiDung}</Text>
-                {renderCheDo(post.cheDoRiengTu)}
+              <Flex direction="column" align="flex-start" gap={0}>
+                <Flex align="center" gap={2}>
+                  <Avatar size="md" src={post.anhDaiDienNguoiDung} name={post.hoTenNguoiDung} />
+                  <Text fontWeight="bold">{post.hoTenNguoiDung}</Text>
+                  {renderCheDo(post.cheDoRiengTu)}
+                  <Text fontSize="sm" color="gray.500" ml={2}>
+                    {post.ngayTao ? formatTimeAgo(post.ngayTao) : ""}
+                  </Text>
+                  
+                </Flex>
               </Flex>
               {/* Nút ba chấm đã có ở góc phải */}
             </Flex>
