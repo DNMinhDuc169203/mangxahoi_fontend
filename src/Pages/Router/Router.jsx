@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../../Components/SideBar/Sidebar";
 import HomePage from "../TrangChu/TrangChu";
 import { Route, Routes, useLocation } from "react-router-dom";
@@ -10,6 +10,7 @@ import Register from "../DangKy/DangKy";
 import Verify from "../XacThuc/XacThuc";
 import ForgotPassword from "../QuenMatKhau/QuenMatKhau";
 import SearchComponents from "../../Components/TimKiem/TimKiem";
+import FriendsPage from "../BanBe/Banbe";
 
 const ProfileWithId = () => {
   const { id } = useParams();
@@ -25,8 +26,8 @@ const Backdrop = ({ onClick }) => (
       top: 0,
       width: '100vw',
       height: '100vh',
-      background: 'rgba(0,0,0,0.1)',
-      zIndex: 999,
+      background: 'rgba(0,0,0,0.08)',
+      zIndex: 29,
     }}
     onClick={onClick}
   />
@@ -35,6 +36,12 @@ const Backdrop = ({ onClick }) => (
 const Router = () => {
   const location = useLocation();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+
+  // Đóng search khi chuyển route
+  useEffect(() => {
+    setIsSearchVisible(false);
+  }, [location.pathname]);
+
   if (location.pathname === "/login") {
     return <Login />;
   }
@@ -68,11 +75,13 @@ const Router = () => {
             <SearchComponents setIsSearchVisible={setIsSearchVisible} />
           </div>
         )}
+        {isSearchVisible && <Backdrop onClick={() => setIsSearchVisible(false)} />}
         {/* Main content */}
         <div style={{ flex: 1, marginLeft: 120 }}>
           <Routes>
             <Route path="/" element={<HomePage />} > </Route>
             <Route path="/profile/:id" element={<ProfileWithId />} />
+            <Route path="/friends" element={<FriendsPage />} />
             <Route path="/login" element={<Login />} > </Route>
             <Route path="/register" element={<Register />} > </Route>
             <Route path="/verify" element={<Verify />} />
@@ -80,8 +89,6 @@ const Router = () => {
           </Routes>
         </div>
       </div>
-      {/* Không cần backdrop nếu muốn giống Instagram, nếu muốn có thì bỏ comment dòng dưới */}
-      {/* {isSearchVisible && <Backdrop onClick={() => setIsSearchVisible(false)} />} */}
     </div>
   );
 };

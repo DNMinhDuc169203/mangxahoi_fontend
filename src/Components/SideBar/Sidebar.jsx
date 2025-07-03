@@ -19,6 +19,11 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
 
   const handleTabClick = (title) => {
     setActiveTab(title);
+    const item = menu.find(m => m.title === title);
+    if (item && item.path) {
+      navigate(item.path);
+      return;
+    }
     if (title === "Profile") {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       if (user && user.id) {

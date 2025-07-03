@@ -12,6 +12,9 @@ import { RiSendPlaneLine } from "react-icons/ri";
 import CommentModal from "../BinhLuan/BinhLuanModal";
 import { useDisclosure } from "@chakra-ui/react";
 import axios from "axios";
+import { FaGlobeAsia, FaUserFriends, FaLock } from "react-icons/fa";
+import moment from "moment";
+import "moment/locale/vi";
 
 const PostCard = ({ post }) => {
   const [showDropDown, setShowDropDown] = useState(false);
@@ -70,6 +73,55 @@ const PostCard = ({ post }) => {
   const image = post?.mediaUrls && post.mediaUrls.length > 0 ? post.mediaUrls[0] : "https://cdn.pixabay.com/photo/2024/01/11/12/46/pitbull-8501582_640.jpg";
   const comments = post?.soLuotBinhLuan ?? 9;
 
+  moment.locale("vi");
+
+  // Sửa lại locale để luôn hiển thị số thay vì chữ "một"
+  if (moment.locale() === "vi") {
+    moment.updateLocale("vi", {
+      relativeTime: {
+        future: "trong %s",
+        past: "%s trước",
+        s: "vài giây",
+        ss: "%d giây",
+        m: "1 phút",
+        mm: "%d phút",
+        h: "1 giờ",
+        hh: "%d giờ",
+        d: "1 ngày",
+        dd: "%d ngày",
+        M: "1 tháng",
+        MM: "%d tháng",
+        y: "1 năm",
+        yy: "%d năm"
+      }
+    });
+  }
+
+  const renderCheDo = (cheDo) => {
+    switch (cheDo) {
+      case 'cong_khai':
+        return (
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-gray-500 text-xs">
+            <FaGlobeAsia /> Công khai
+          </span>
+        );
+      case 'ban_be':
+        return (
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-gray-500 text-xs">
+            <FaUserFriends /> Bạn bè
+          </span>
+        );
+      case 'rieng_tu':
+        return (
+          <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-gray-500 text-xs">
+            <FaLock /> Riêng tư
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div>
       <div className="border rounded-md w-full">
@@ -82,7 +134,12 @@ const PostCard = ({ post }) => {
             />
             <div className="pl-2">
               <p className="font-semibold text-sm ">{username}</p>
-              {/* <p className="font-thin text-sm">location</p> */}
+              <div className="flex items-center space-x-2 mt-1">
+                {renderCheDo(post?.cheDoRiengTu)}
+                {post?.ngayTao && (
+                  <span className="text-xs text-gray-500">· {moment(post.ngayTao).fromNow()}</span>
+                )}
+              </div>
             </div>
           </div>
 
