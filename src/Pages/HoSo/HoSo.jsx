@@ -2,14 +2,14 @@ import React from 'react'
 import { ProfileUserDetails } from '../../Components/HoSo/HoSoChiTietNguoiDung'
 import ReqUserPostPart from '../../Components/HoSo/QuanLiBaiVietNguoiDung'
 
-const Profile = () => {
+const Profile = ({ userId }) => {
   return (
     <div className='px-20'>
        <div >
-          <ProfileUserDetails/>
+          <ProfileUserDetails userId={userId}/>
         </div> 
         <div>
-            <ReqUserPostPart/>
+            <ReqUserPostPart userId={userId}/>
         </div>
     </div>
   )

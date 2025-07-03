@@ -23,7 +23,7 @@ import {
 } from "@chakra-ui/react";
 import { EditIcon, SettingsIcon } from "@chakra-ui/icons";
 
-export const ProfileUserDetails = () => {
+export const ProfileUserDetails = ({ userId }) => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
@@ -38,6 +38,8 @@ export const ProfileUserDetails = () => {
     ngaySinhCongKhai: true,
     gioiTinhCongKhai: true,
   });
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [friendStatus, setFriendStatus] = useState(null); // null, 'friend', 'pending', 'none'
 
   const fetchUser = () => {
     const token = localStorage.getItem("token") || "";
@@ -45,8 +47,14 @@ export const ProfileUserDetails = () => {
       setError("Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn.");
       return;
     }
+    let url;
+    if (userId) {
+      url = `http://localhost:8080/network/api/nguoi-dung/${userId}`;
+    } else {
+      url = "http://localhost:8080/network/api/nguoi-dung/thong-tin-hien-tai";
+    }
     axios
-      .get("http://localhost:8080/network/api/nguoi-dung/thong-tin-hien-tai", {
+      .get(url, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -58,14 +66,28 @@ export const ProfileUserDetails = () => {
           ngaySinhCongKhai: res.data.ngaySinhCongKhai,
           gioiTinhCongKhai: res.data.gioiTinhCongKhai,
         });
-        localStorage.setItem("user", JSON.stringify(res.data));
+        if (!userId || (res.data.id && res.data.id === JSON.parse(localStorage.getItem("user") || '{}').id)) {
+          setIsOwnProfile(true);
+        } else {
+          setIsOwnProfile(false);
+          // Gọi API kiểm tra trạng thái bạn bè
+          axios.get(`http://localhost:8080/network/api/ket-ban/trang-thai/${res.data.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then(r => {
+            // Map trạng thái backend sang FE
+            let status = r.data.status;
+            if (status === 'ban_be') setFriendStatus('friend');
+            else if (status === 'cho_chap_nhan') setFriendStatus('pending');
+            else setFriendStatus('none');
+          }).catch(() => setFriendStatus(null));
+        }
       })
-      .catch(() => setError("Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn."));
+      .catch(() => setError("Không thể tải thông tin người dùng."));
   };
 
   useEffect(() => {
     fetchUser();
-  }, []);
+  }, [userId]);
 
   const handleEditChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
@@ -233,18 +255,95 @@ export const ProfileUserDetails = () => {
         <div className="space-y-5">
           <div className="flex space-x-10 items-center">
             <p className="font-bold text-xl">{user.hoTen || "Chưa cập nhật"}</p>
-            <IconButton
-              aria-label="Chỉnh sửa thông tin"
-              icon={<EditIcon />}
-              onClick={onEditOpen}
-              colorScheme="gray"
-            />
-            <IconButton
-              aria-label="Quản lý riêng tư"
-              icon={<SettingsIcon />}
-              onClick={onPrivacyOpen}
-              colorScheme="gray"
-            />
+            {isOwnProfile ? (
+              <>
+                <IconButton
+                  aria-label="Chỉnh sửa thông tin"
+                  icon={<EditIcon />}
+                  onClick={onEditOpen}
+                  colorScheme="gray"
+                />
+                <IconButton
+                  aria-label="Quản lý riêng tư"
+                  icon={<SettingsIcon />}
+                  onClick={onPrivacyOpen}
+                  colorScheme="gray"
+                />
+              </>
+            ) : (
+              <>
+                {friendStatus === 'friend' ? (
+                  <Button colorScheme="gray" disabled>Đã là bạn bè</Button>
+                ) : friendStatus === 'pending' ? (
+                  <Button colorScheme="gray" onClick={async () => {
+                    const token = localStorage.getItem("token") || "";
+                    try {
+                      // Lấy danh sách lời mời đã gửi
+                      const res = await axios.get(`http://localhost:8080/network/api/ket-ban/danh-sach/loi-moi-gui?page=0&size=20`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      // Tìm idLoiMoi theo idNguoiNhan
+                      const loiMoi = res.data.content.find(lm => lm.idNguoiNhan === user.id);
+                      if (loiMoi && loiMoi.idLoiMoi) {
+                        await axios.delete(`http://localhost:8080/network/api/ket-ban/huy-loi-moi/${loiMoi.idLoiMoi}`, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        setFriendStatus('none');
+                        toast({
+                          title: 'Đã hủy lời mời kết bạn!',
+                          status: 'success',
+                          duration: 500,
+                          isClosable: true,
+                          position: 'top',
+                        });
+                      } else {
+                        setFriendStatus('none');
+                        toast({
+                          title: 'Lời mời đã được hủy hoặc không tồn tại!',
+                          status: 'info',
+                          duration: 500,
+                          isClosable: true,
+                          position: 'top',
+                        });
+                      }
+                    } catch (err) {
+                      toast({
+                        title: err?.response?.data?.message || 'Có lỗi xảy ra khi hủy lời mời!',
+                        status: 'error',
+                        duration: 500,
+                        isClosable: true,
+                        position: 'top',
+                      });
+                    }
+                  }}>Hủy lời mời</Button>
+                ) : (
+                  <Button colorScheme="blue" onClick={async () => {
+                    const token = localStorage.getItem("token") || "";
+                    try {
+                      await axios.post(`http://localhost:8080/network/api/ket-ban/loi-moi/${user.id}`, null, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      setFriendStatus('pending');
+                      toast({
+                        title: 'Đã gửi lời mời kết bạn!',
+                        status: 'success',
+                        duration: 500,
+                        isClosable: true,
+                        position: 'top',
+                      });
+                    } catch (err) {
+                      toast({
+                        title: err?.response?.data?.message || 'Có lỗi xảy ra khi gửi lời mời!',
+                        status: 'error',
+                        duration: 500,
+                        isClosable: true,
+                        position: 'top',
+                      });
+                    }
+                  }}>Kết bạn</Button>
+                )}
+              </>
+            )}
           </div>
           <p className="text-gray-600">{user.tieuSu || "Chưa có tiểu sử. Bạn có thể cập nhật trong phần chỉnh sửa."}</p>
           <div className="grid grid-cols-2 gap-x-10 gap-y-1 mt-2">
@@ -353,6 +452,20 @@ export const ProfileUserDetails = () => {
           </VStack>
         </ModalContent>
       </Modal>
+
+      {/* Hiển thị thông tin theo chế độ riêng tư */}
+      {(!isOwnProfile && user.mucRiengTu === 'rieng_tu' && friendStatus !== 'friend') && (
+        <div className="text-center py-10 text-lg text-gray-500">Đây là tài khoản riêng tư. Hãy kết bạn để xem thông tin chi tiết.</div>
+      )}
+      {(!isOwnProfile && user.mucRiengTu === 'ban_be' && friendStatus !== 'friend') && (
+        <div className="text-center py-10 text-lg text-gray-500">Chỉ bạn bè mới xem được thông tin này. Hãy kết bạn để xem chi tiết.</div>
+      )}
+      {/* Nếu là công khai hoặc là bạn hoặc là chính mình thì hiển thị đầy đủ */}
+      {((user.mucRiengTu === 'cong_khai') || isOwnProfile || friendStatus === 'friend') && (
+        <div className="grid grid-cols-2 gap-x-10 gap-y-1 mt-2">
+          {/* Thông tin cá nhân chỉ hiển thị 1 lần trong grid bên dưới */}
+        </div>
+      )}
     </div>
   );
 };
