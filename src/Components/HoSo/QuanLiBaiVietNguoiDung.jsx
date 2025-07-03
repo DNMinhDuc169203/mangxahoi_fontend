@@ -6,7 +6,7 @@ import ReqUserPostCard from "./ChiTietBaiVietNguoiDung";
 import axios from "axios";
 import PostDetailModal from "./BaiDangChiTietModal";
 
-const ReqUserPostPart = () => {
+const ReqUserPostPart = ({ userId }) => {
   const [activeTab, setActiveTab] = useState("Post");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -25,10 +25,9 @@ const ReqUserPostPart = () => {
         setLoading(true);
         try {
           const token = localStorage.getItem("token");
-          const user = JSON.parse(localStorage.getItem("user"));
-          if (!user?.id) return;
+          if (!userId) return;
           const res = await axios.get(
-            `http://localhost:8080/network/api/bai-viet/quan-ly`,
+            `http://localhost:8080/network/api/bai-viet/nguoi-dung/${userId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setPosts(res.data.baiViet || []);
@@ -40,7 +39,7 @@ const ReqUserPostPart = () => {
       };
       fetchPosts();
     }
-  }, [activeTab]);
+  }, [activeTab, userId]);
 
   const handleOpenModal = (post) => {
     setModalPost(post);

@@ -30,6 +30,15 @@ const Login = () => {
       } else {
         localStorage.setItem("email", form.emailHoacSoDienThoai);
       }
+      // Lấy thông tin user hiện tại và lưu vào localStorage
+      if (res.data.token) {
+        try {
+          const userRes = await axios.get("http://localhost:8080/network/api/nguoi-dung/thong-tin-hien-tai", {
+            headers: { Authorization: `Bearer ${res.data.token}` }
+          });
+          localStorage.setItem("user", JSON.stringify(userRes.data));
+        } catch {}
+      }
       toast({
         title: "Đăng nhập thành công!",
         status: "success",
