@@ -17,13 +17,14 @@ const PostCard = ({ post }) => {
   const [showDropDown, setShowDropDown] = useState(false);
   const [isPostLiked, setIsPostLiked] = useState(post?.daThich || false);
   const [isSaved, setIsSaved] = useState(false);
-  const [likes, setLikes] = useState(post?.soLuotThich ?? 10);
+  const [likes, setLikes] = useState(post?.soLuotThich ?? 0);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleSavePost = () => {
     setIsSaved(!isSaved);
   };
 
+  
   const handlePostLike = async () => {
     if (!post?.id) return;
     const token = localStorage.getItem("token");

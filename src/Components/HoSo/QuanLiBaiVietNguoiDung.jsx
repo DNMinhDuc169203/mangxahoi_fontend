@@ -82,7 +82,16 @@ const ReqUserPostPart = () => {
             )}
           </div>
         )}
-        <PostDetailModal post={modalPost} isOpen={isModalOpen} onClose={handleCloseModal} />
+        <PostDetailModal 
+          post={modalPost} 
+          isOpen={isModalOpen} 
+          onClose={handleCloseModal}
+          onCommentAdded={() => {
+            if (!modalPost) return;
+            setPosts(prev => prev.map(p => p.id === modalPost.id ? { ...p, soLuotBinhLuan: (p.soLuotBinhLuan || 0) + 1 } : p));
+            setModalPost(prev => prev ? { ...prev, soLuotBinhLuan: (prev.soLuotBinhLuan || 0) + 1 } : prev);
+          }}
+        />
         {/* Các tab khác giữ nguyên hoặc render nội dung khác nếu muốn */}
       </div>
     </div>

@@ -5,7 +5,7 @@ import { FaComment, FaRegSmile, FaUserFriends } from 'react-icons/fa';
 import { BsThreeDots } from 'react-icons/bs';
 import axios from "axios";
 
-const PostDetailModal = ({ post, isOpen, onClose }) => {
+const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
   const [currentImg, setCurrentImg] = useState(0);
   const [comments, setComments] = useState([]);
   const [totalComments, setTotalComments] = useState(0);
@@ -23,6 +23,10 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
   const [replies, setReplies] = useState({}); // { [binhLuanId]: [replyList] }
   const [loadingReplies, setLoadingReplies] = useState({}); // { [binhLuanId]: true/false }
   const [showAllReplies, setShowAllReplies] = useState({}); // { [binhLuanId]: true/false }
+
+  // State cho like bài viết
+  const [liked, setLiked] = useState(post?.daThich || false);
+  const [likeCount, setLikeCount] = useState(post?.soLuotThich || 0);
 
   React.useEffect(() => {
     setCurrentImg(0);
@@ -46,6 +50,11 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
       })
       .finally(() => setLoadingComments(false));
   }, [post, token]);
+
+  useEffect(() => {
+    setLikeCount(post?.soLuotThich || 0);
+    setLiked(post?.daThich || false); // Nếu backend trả về trường này
+  }, [post]);
 
   // Tự động fetch phản hồi cho mỗi bình luận cha có phản hồi khi render
   React.useEffect(() => {
@@ -84,7 +93,6 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
         }
       );
       setNewComment("");
-      // Gọi lại API lấy bình luận mới nhất
       setLoadingComments(true);
       const res = await axios.get(
         `http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}?page=0&size=10`,
@@ -93,9 +101,9 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
       setComments(res.data.binhLuan || []);
       setTotalComments(res.data.tongSoBinhLuan || 0);
       setLoadingComments(false);
+      if (typeof onCommentAdded === "function") onCommentAdded();
     } catch (err) {
       setLoadingComments(false);
-      // Xử lý lỗi nếu cần
     }
   };
 
@@ -187,9 +195,72 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
     return ref.current;
   }
 
+  // Hàm gọi API thích bài viết
+  const handleLikePost = async () => {
+    if (!token) return;
+    try {
+      await axios.post(
+        `http://localhost:8080/network/api/bai-viet/${post.id}/thich`,
+        null,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setLiked(true);
+      setLikeCount(likeCount + 1);
+    } catch (err) {
+      // Xử lý lỗi nếu cần
+    }
+  };
+
+  // Hàm gọi API bỏ thích bài viết
+  const handleUnlikePost = async () => {
+    if (!token) return;
+    try {
+      await axios.delete(
+        `http://localhost:8080/network/api/bai-viet/${post.id}/thich`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setLiked(false);
+      setLikeCount(likeCount > 0 ? likeCount - 1 : 0);
+    } catch (err) {
+      // Xử lý lỗi nếu cần
+    }
+  };
+
   // Đệ quy render bình luận lồng nhiều cấp (chỉ 2 cấp: gốc và phản hồi)
   const CommentItem = ({ comment, level = 0, postId, rootCommentId, token, fetchReplies, replies, loadingReplies, showAllReplies, setShowAllReplies, replyBox, setReplyBox, handleSendReply }) => {
     const inputRef = useRef();
+    // State cho like bình luận
+    const [commentLiked, setCommentLiked] = useState(comment?.daThich || false);
+    const [commentLikeCount, setCommentLikeCount] = useState(comment?.soLuotThich || 0);
+
+    useEffect(() => {
+      setCommentLiked(comment?.daThich || false);
+      setCommentLikeCount(comment?.soLuotThich || 0);
+    }, [comment?.daThich, comment?.soLuotThich]);
+
+    const handleLikeComment = async () => {
+      if (!token) return;
+      try {
+        await axios.post(
+          `http://localhost:8080/network/api/binh-luan/${comment.id}/thich`,
+          null,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setCommentLiked(true);
+        setCommentLikeCount(commentLikeCount + 1);
+      } catch (err) {}
+    };
+    const handleUnlikeComment = async () => {
+      if (!token) return;
+      try {
+        await axios.delete(
+          `http://localhost:8080/network/api/binh-luan/${comment.id}/thich`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setCommentLiked(false);
+        setCommentLikeCount(commentLikeCount > 0 ? commentLikeCount - 1 : 0);
+      } catch (err) {}
+    };
     // Focus input khi click vào nút 'Trả lời' bằng requestAnimationFrame
     const handleReplyClick = () => {
       setReplyBox({ [comment.id]: true });
@@ -209,7 +280,14 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
         <Box ml={level === 0 ? 10 : 8} fontSize={level === 0 ? "md" : "sm"} whiteSpace="pre-line">{comment.noiDung}</Box>
         <Flex ml={level === 0 ? 10 : 8} align="center" gap={3} fontSize="xs" color="gray.500" mt={0.5}>
           <Text>{comment.ngayTao ? new Date(comment.ngayTao).toLocaleDateString() : ""}</Text>
-          <Text fontWeight="bold" cursor="pointer">Thích</Text>
+          <Text
+            fontWeight="bold"
+            cursor="pointer"
+            color={commentLiked ? "red.400" : "gray.500"}
+            onClick={commentLiked ? handleUnlikeComment : handleLikeComment}
+          >
+            Thích {commentLikeCount > 0 && `(${commentLikeCount})`}
+          </Text>
           <Text fontWeight="bold" cursor="pointer" onClick={handleReplyClick}>Trả lời</Text>
         </Flex>
         {/* Ô nhập phản hồi */}
@@ -370,7 +448,17 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
               )}
               {/* Like & comment count */}
               <Flex align="center" gap={6} mt={2} mb={2}>
-                <Flex align="center" gap={1}><AiFillHeart color="red" /> <span>{post.soLuotThich || 0}</span></Flex>
+                <Button
+                  leftIcon={<AiFillHeart color={liked ? "red" : "gray"} />}
+                  colorScheme={liked ? "red" : "gray"}
+                  variant="ghost"
+                  onClick={liked ? handleUnlikePost : handleLikePost}
+                  size="sm"
+                  fontWeight="bold"
+                  px={2}
+                >
+                  {likeCount}
+                </Button>
                 <Flex align="center" gap={1}><FaComment /> <span>{post.soLuotBinhLuan || 0}</span></Flex>
               </Flex>
               {/* Danh sách bình luận */}
@@ -381,6 +469,8 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
                 </Flex>
                 {loadingComments ? (
                   <Text color="gray.400" fontSize="sm" textAlign="center">Đang tải bình luận...</Text>
+                ) : totalComments === 0 ? (
+                  <Text color="gray.400" fontSize="sm" textAlign="center">Chưa có bình luận nào</Text>
                 ) : (
                   <>
                     {shownComments.map((c, idx) => (
