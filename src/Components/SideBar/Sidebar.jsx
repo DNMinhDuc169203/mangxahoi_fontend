@@ -46,7 +46,7 @@ const [isSearchVisible, setIsSearchVisible]= useState(false);
             {menu.map((item) => (
               <div key={item.title} onClick={()=>handleTabClick(item.title)} className="flex items-center mb-5 cursor-pointer text-lg">
                 {activeTab===item.title? item.activeIcon:item.icon}
-              {activeTab!=="Search" &&<p className={`${activeTab===item.title?"font-bold":"font-semyibold"}`}>{item.title}</p>}
+              {activeTab!=="Search" &&<p className={`${activeTab===item.title?"font-bold text-red-500":"font-semyibold"}`}>{item.title}</p>}
               </div>
             ))}
           </div>

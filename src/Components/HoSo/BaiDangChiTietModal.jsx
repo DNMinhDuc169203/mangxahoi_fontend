@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Modal, ModalOverlay, ModalContent, ModalCloseButton, ModalBody, Box, Image, Text, Avatar, Flex, VStack, IconButton, Input, Button, Icon, HStack } from '@chakra-ui/react';
 import { AiFillHeart, AiOutlineLeft, AiOutlineRight, AiOutlineGlobal, AiFillLock } from 'react-icons/ai';
 import { FaComment, FaRegSmile, FaUserFriends } from 'react-icons/fa';
@@ -15,6 +15,15 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
   const maxShow = 2;
   const shownComments = showAll ? comments : comments.slice(0, maxShow);
 
+  // Lấy token từ localStorage (hoặc context nếu bạn dùng context)
+  const token = localStorage.getItem('token');
+
+  // State cho phản hồi từng bình luận
+  const [replyBox, setReplyBox] = useState({}); // { [binhLuanId]: true/false }
+  const [replies, setReplies] = useState({}); // { [binhLuanId]: [replyList] }
+  const [loadingReplies, setLoadingReplies] = useState({}); // { [binhLuanId]: true/false }
+  const [showAllReplies, setShowAllReplies] = useState({}); // { [binhLuanId]: true/false }
+
   React.useEffect(() => {
     setCurrentImg(0);
   }, [post]);
@@ -24,7 +33,9 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
     if (!post?.id) return;
     setLoadingComments(true);
     axios
-      .get(`http://localhost:8080/api/binh-luan/bai-viet/${post.id}?page=0&size=100`)
+      .get(`http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}?page=0&size=10`,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+      )
       .then(res => {
         setComments(res.data.binhLuan || []);
         setTotalComments(res.data.tongSoBinhLuan || 0);
@@ -34,7 +45,17 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
         setTotalComments(0);
       })
       .finally(() => setLoadingComments(false));
-  }, [post]);
+  }, [post, token]);
+
+  // Tự động fetch phản hồi cho mỗi bình luận cha có phản hồi khi render
+  React.useEffect(() => {
+    comments.forEach(c => {
+      if (c.soLuotPhanHoi > 0 && !replies[c.id]) {
+        fetchReplies(c.id, 1);
+      }
+    });
+    // eslint-disable-next-line
+  }, [comments]);
 
   if (!post) return null;
 
@@ -50,10 +71,87 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
     setCurrentImg((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const handleSendComment = () => {
+  // Sửa lại hàm gửi bình luận
+  const handleSendComment = async () => {
     if (!newComment.trim()) return;
-    setComments([...comments, { userName: 'Bạn', text: newComment }]);
-    setNewComment("");
+    try {
+      await axios.post(
+        `http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}`,
+        null,
+        {
+          params: { noiDung: newComment },
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        }
+      );
+      setNewComment("");
+      // Gọi lại API lấy bình luận mới nhất
+      setLoadingComments(true);
+      const res = await axios.get(
+        `http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}?page=0&size=10`,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+      );
+      setComments(res.data.binhLuan || []);
+      setTotalComments(res.data.tongSoBinhLuan || 0);
+      setLoadingComments(false);
+    } catch (err) {
+      setLoadingComments(false);
+      // Xử lý lỗi nếu cần
+    }
+  };
+
+  // Sửa fetchReplies để nhận size
+  const fetchReplies = async (binhLuanId, size = 0) => {
+    setLoadingReplies(prev => ({ ...prev, [binhLuanId]: true }));
+    try {
+      const res = await axios.get(
+        `http://localhost:8080/network/api/binh-luan/${binhLuanId}/phan-hoi?page=0&size=${size}`,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+      );
+      setReplies(prev => ({ ...prev, [binhLuanId]: res.data.binhLuan || [] }));
+    } catch {
+      setReplies(prev => ({ ...prev, [binhLuanId]: [] }));
+    } finally {
+      setLoadingReplies(prev => ({ ...prev, [binhLuanId]: false }));
+    }
+  };
+
+  // Component ô nhập phản hồi dùng state cục bộ, React.memo
+  const ReplyInput = React.memo(({ onSend }) => {
+    const [value, setValue] = useState("");
+    const inputRef = useRef();
+    useEffect(() => { inputRef.current && inputRef.current.focus(); }, []);
+    return (
+      <Flex mt={2} gap={2} align="center">
+        <Input
+          ref={inputRef}
+          size="sm"
+          placeholder="Phản hồi..."
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') onSend(value, setValue); }}
+        />
+        <Button size="sm" colorScheme="blue" isDisabled={!value.trim()} onClick={() => onSend(value, setValue)}>Gửi</Button>
+      </Flex>
+    );
+  });
+
+  // Hàm gửi phản hồi
+  const handleSendReply = async (rootCommentId, postId, value, resetInput) => {
+    const text = value?.trim();
+    if (!text) return;
+    try {
+      await axios.post(
+        `http://localhost:8080/network/api/binh-luan/bai-viet/${postId}/binh-luan/${rootCommentId}`,
+        null,
+        {
+          params: { noiDung: text },
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        }
+      );
+      if (resetInput) resetInput("");
+      fetchReplies(rootCommentId, 100);
+      setShowAllReplies(prev => ({ ...prev, [rootCommentId]: true }));
+    } catch {}
   };
 
   // Hàm render chế độ bài viết
@@ -80,6 +178,91 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
       default:
         return null;
     }
+  };
+
+  // Thêm hook usePrevious
+  function usePrevious(value) {
+    const ref = useRef();
+    useEffect(() => { ref.current = value; }, [value]);
+    return ref.current;
+  }
+
+  // Đệ quy render bình luận lồng nhiều cấp (chỉ 2 cấp: gốc và phản hồi)
+  const CommentItem = ({ comment, level = 0, postId, rootCommentId, token, fetchReplies, replies, loadingReplies, showAllReplies, setShowAllReplies, replyBox, setReplyBox, handleSendReply }) => {
+    const inputRef = useRef();
+    // Focus input khi click vào nút 'Trả lời' bằng requestAnimationFrame
+    const handleReplyClick = () => {
+      setReplyBox({ [comment.id]: true });
+      requestAnimationFrame(() => {
+        if (inputRef.current) inputRef.current.focus();
+      });
+    };
+
+    return (
+      <Box mb={2} ml={level * 6}>
+        <Flex align="center" gap={2}>
+          <Avatar src={comment.anhDaiDienNguoiDung || "/anhbandau.jpg"} name={comment.hoTenNguoiDung || "Ẩn danh"} size={level === 0 ? "sm" : "xs"} />
+          <Text fontWeight="bold" fontSize="sm">{comment.hoTenNguoiDung || "Ẩn danh"}</Text>
+          <Box flex={1} />
+          <IconButton icon={<Box as="span" fontSize="xl">...</Box>} variant="ghost" size="xs" aria-label="menu" tabIndex={-1} />
+        </Flex>
+        <Box ml={level === 0 ? 10 : 8} fontSize={level === 0 ? "md" : "sm"} whiteSpace="pre-line">{comment.noiDung}</Box>
+        <Flex ml={level === 0 ? 10 : 8} align="center" gap={3} fontSize="xs" color="gray.500" mt={0.5}>
+          <Text>{comment.ngayTao ? new Date(comment.ngayTao).toLocaleDateString() : ""}</Text>
+          <Text fontWeight="bold" cursor="pointer">Thích</Text>
+          <Text fontWeight="bold" cursor="pointer" onClick={handleReplyClick}>Trả lời</Text>
+        </Flex>
+        {/* Ô nhập phản hồi */}
+        {replyBox[comment.id] && (
+          <Box ml={level === 0 ? 10 : 8}>
+            <ReplyInput onSend={(val, reset) => handleSendReply(rootCommentId, postId, val, reset)} />
+          </Box>
+        )}
+        {/* Hiển thị phản hồi (chỉ 2 cấp) */}
+        {level === 0 && showAllReplies[comment.id] && (
+          <Box ml={4} mt={2}>
+            {loadingReplies[comment.id] ? (
+              <Text color="gray.400" fontSize="sm">Đang tải phản hồi...</Text>
+            ) : (
+              <>
+                {replies[comment.id] && replies[comment.id].map((r, ridx) => (
+                  <CommentItem
+                    key={r.id || ridx}
+                    comment={r}
+                    level={1}
+                    postId={postId}
+                    rootCommentId={comment.id}
+                    token={token}
+                    fetchReplies={fetchReplies}
+                    replies={replies}
+                    loadingReplies={loadingReplies}
+                    showAllReplies={showAllReplies}
+                    setShowAllReplies={setShowAllReplies}
+                    replyBox={replyBox}
+                    setReplyBox={setReplyBox}
+                    handleSendReply={handleSendReply}
+                  />
+                ))}
+                <Text color="gray.500" fontWeight="bold" cursor="pointer" ml={2} onClick={async () => {
+                  setShowAllReplies(prev => ({ ...prev, [comment.id]: false }));
+                }}>
+                  Ẩn bớt phản hồi
+                </Text>
+              </>
+            )}
+          </Box>
+        )}
+        {/* Nút xem tất cả phản hồi */}
+        {level === 0 && !showAllReplies[comment.id] && comment.soLuotPhanHoi > 0 && (
+          <Text color="blue.500" fontWeight="bold" cursor="pointer" ml={2} onClick={async () => {
+            setShowAllReplies(prev => ({ ...prev, [comment.id]: true }));
+            await fetchReplies(comment.id, 100);
+          }}>
+            Xem tất cả {comment.soLuotPhanHoi} phản hồi
+          </Text>
+        )}
+      </Box>
+    );
   };
 
   return (
@@ -201,20 +384,22 @@ const PostDetailModal = ({ post, isOpen, onClose }) => {
                 ) : (
                   <>
                     {shownComments.map((c, idx) => (
-                      <Box key={c.id || idx} mb={2}>
-                        <Flex align="center" gap={2}>
-                          <Avatar src={c.nguoiDung?.anhDaiDien || "/anhbandau.jpg"} name={c.nguoiDung?.hoTen || "Ẩn danh"} size="sm" />
-                          <Text fontWeight="bold" fontSize="sm">{c.nguoiDung?.hoTen || "Ẩn danh"}</Text>
-                          <Box flex={1} />
-                          <IconButton icon={<Box as="span" fontSize="xl">...</Box>} variant="ghost" size="xs" aria-label="menu" />
-                        </Flex>
-                        <Box ml={10} fontSize="md" whiteSpace="pre-line">{c.noiDung}</Box>
-                        <Flex ml={10} align="center" gap={3} fontSize="xs" color="gray.500" mt={0.5}>
-                          <Text>{c.ngayTao ? new Date(c.ngayTao).toLocaleDateString() : ""}</Text>
-                          <Text fontWeight="bold" cursor="pointer">Thích</Text>
-                          <Text fontWeight="bold" cursor="pointer">Trả lời</Text>
-                        </Flex>
-                      </Box>
+                      <CommentItem
+                        key={c.id || idx}
+                        comment={c}
+                        level={0}
+                        postId={post.id}
+                        rootCommentId={c.id}
+                        token={token}
+                        fetchReplies={fetchReplies}
+                        replies={replies}
+                        loadingReplies={loadingReplies}
+                        showAllReplies={showAllReplies}
+                        setShowAllReplies={setShowAllReplies}
+                        replyBox={replyBox}
+                        setReplyBox={setReplyBox}
+                        handleSendReply={handleSendReply}
+                      />
                     ))}
                     {!showAll && totalComments > maxShow && (
                       <Text ml={2} mt={2} color="blue.500" fontWeight="bold" cursor="pointer" onClick={() => setShowAll(true)}>
