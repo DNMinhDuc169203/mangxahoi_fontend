@@ -25,7 +25,7 @@ function formatTimeAgo(dateString) {
   }
 }
 
-const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
+const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged }) => {
   const [currentImg, setCurrentImg] = useState(0);
   const [comments, setComments] = useState([]);
   const [totalComments, setTotalComments] = useState(0);
@@ -48,6 +48,9 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
   const [liked, setLiked] = useState(post?.daThich || false);
   const [likeCount, setLikeCount] = useState(post?.soLuotThich || 0);
 
+  // Thêm state quản lý like và likeCount cho từng bình luận
+  const [commentLikes, setCommentLikes] = useState({}); // { [binhLuanId]: { liked: bool, count: number } }
+
   React.useEffect(() => {
     setCurrentImg(0);
   }, [post]);
@@ -63,10 +66,17 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
       .then(res => {
         setComments(res.data.binhLuan || []);
         setTotalComments(res.data.tongSoBinhLuan || 0);
+        // Đồng bộ trạng thái like cho từng bình luận
+        const likeMap = {};
+        (res.data.binhLuan || []).forEach(c => {
+          likeMap[c.id] = { liked: c.daThich || false, count: c.soLuotThich || 0 };
+        });
+        setCommentLikes(likeMap);
       })
       .catch(() => {
         setComments([]);
         setTotalComments(0);
+        setCommentLikes({});
       })
       .finally(() => setLoadingComments(false));
   }, [post, token]);
@@ -135,7 +145,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
         token ? { headers: { Authorization: `Bearer ${token}` } } : {}
       );
       setComments(res.data.binhLuan || []);
-      setTotalComments(res.data.tongSoBinhLuan || 0);
+      setTotalComments((prev) => prev + 1);
       setLoadingComments(false);
       if (typeof onCommentAdded === "function") onCommentAdded();
     } catch (err) {
@@ -152,6 +162,14 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
         token ? { headers: { Authorization: `Bearer ${token}` } } : {}
       );
       setReplies(prev => ({ ...prev, [binhLuanId]: res.data.binhLuan || [] }));
+      // Đồng bộ trạng thái like cho từng reply
+      setCommentLikes(prev => {
+        const newLikes = { ...prev };
+        (res.data.binhLuan || []).forEach(r => {
+          newLikes[r.id] = { liked: r.daThich || false, count: r.soLuotThich || 0 };
+        });
+        return newLikes;
+      });
     } catch {
       setReplies(prev => ({ ...prev, [binhLuanId]: [] }));
     } finally {
@@ -242,6 +260,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
       );
       setLiked(true);
       setLikeCount(likeCount + 1);
+      if (typeof onLikeChanged === 'function') onLikeChanged(true, likeCount + 1);
     } catch (err) {
       // Xử lý lỗi nếu cần
     }
@@ -257,46 +276,50 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
       );
       setLiked(false);
       setLikeCount(likeCount > 0 ? likeCount - 1 : 0);
+      if (typeof onLikeChanged === 'function') onLikeChanged(false, likeCount > 0 ? likeCount - 1 : 0);
     } catch (err) {
       // Xử lý lỗi nếu cần
     }
   };
 
+  // Hàm like/unlike bình luận cập nhật state ở cha
+  const handleLikeComment = async (commentId) => {
+    if (!token) return;
+    try {
+      await axios.post(
+        `http://localhost:8080/network/api/binh-luan/${commentId}/thich`,
+        null,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCommentLikes(prev => ({
+        ...prev,
+        [commentId]: {
+          liked: true,
+          count: (prev[commentId]?.count || 0) + 1
+        }
+      }));
+    } catch {}
+  };
+  const handleUnlikeComment = async (commentId) => {
+    if (!token) return;
+    try {
+      await axios.delete(
+        `http://localhost:8080/network/api/binh-luan/${commentId}/thich`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCommentLikes(prev => ({
+        ...prev,
+        [commentId]: {
+          liked: false,
+          count: (prev[commentId]?.count || 1) - 1 < 0 ? 0 : (prev[commentId]?.count || 1) - 1
+        }
+      }));
+    } catch {}
+  };
+
   // Đệ quy render bình luận lồng nhiều cấp (chỉ 2 cấp: gốc và phản hồi)
-  const CommentItem = ({ comment, level = 0, postId, rootCommentId, token, fetchReplies, replies, loadingReplies, showAllReplies, setShowAllReplies, replyBox, setReplyBox, handleSendReply }) => {
+  const CommentItem = ({ comment, level = 0, postId, rootCommentId, token, fetchReplies, replies, loadingReplies, showAllReplies, setShowAllReplies, replyBox, setReplyBox, handleSendReply, liked, likeCount, onLike, onUnlike }) => {
     const inputRef = useRef();
-    // State cho like bình luận
-    const [commentLiked, setCommentLiked] = useState(comment?.daThich || false);
-    const [commentLikeCount, setCommentLikeCount] = useState(comment?.soLuotThich || 0);
-
-    useEffect(() => {
-      setCommentLiked(comment?.daThich || false);
-      setCommentLikeCount(comment?.soLuotThich || 0);
-    }, [comment?.daThich, comment?.soLuotThich]);
-
-    const handleLikeComment = async () => {
-      if (!token) return;
-      try {
-        await axios.post(
-          `http://localhost:8080/network/api/binh-luan/${comment.id}/thich`,
-          null,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setCommentLiked(true);
-        setCommentLikeCount(commentLikeCount + 1);
-      } catch (err) {}
-    };
-    const handleUnlikeComment = async () => {
-      if (!token) return;
-      try {
-        await axios.delete(
-          `http://localhost:8080/network/api/binh-luan/${comment.id}/thich`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setCommentLiked(false);
-        setCommentLikeCount(commentLikeCount > 0 ? commentLikeCount - 1 : 0);
-      } catch (err) {}
-    };
     // Focus input khi click vào nút 'Trả lời' bằng requestAnimationFrame
     const handleReplyClick = () => {
       setReplyBox({ [comment.id]: true });
@@ -319,10 +342,10 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
           <Text
             fontWeight="bold"
             cursor="pointer"
-            color={commentLiked ? "red.400" : "gray.500"}
-            onClick={commentLiked ? handleUnlikeComment : handleLikeComment}
+            color={liked ? "red.400" : "gray.500"}
+            onClick={liked ? () => onUnlike(comment.id) : () => onLike(comment.id)}
           >
-            Thích {commentLikeCount > 0 && `(${commentLikeCount})`}
+            Thích {likeCount > 0 && `(${likeCount})`}
           </Text>
           <Text fontWeight="bold" cursor="pointer" onClick={handleReplyClick}>Trả lời</Text>
         </Flex>
@@ -355,6 +378,10 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
                     replyBox={replyBox}
                     setReplyBox={setReplyBox}
                     handleSendReply={handleSendReply}
+                    liked={commentLikes[r.id]?.liked || false}
+                    likeCount={commentLikes[r.id]?.count || 0}
+                    onLike={handleLikeComment}
+                    onUnlike={handleUnlikeComment}
                   />
                 ))}
                 <Text color="gray.500" fontWeight="bold" cursor="pointer" ml={2} onClick={async () => {
@@ -457,7 +484,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
             <Flex align="center" mb={4} gap={3} justify="space-between">
               <Flex direction="column" align="flex-start" gap={0}>
                 <Flex align="center" gap={2}>
-                  <Avatar size="md" src={post.anhDaiDienNguoiDung} name={post.hoTenNguoiDung} />
+                  <Avatar size="md" src={post.anhDaiDienNguoiDung || "/anhbandau.jpg"}  />
                   <Text fontWeight="bold">{post.hoTenNguoiDung}</Text>
                   {renderCheDo(post.cheDoRiengTu)}
                   <Text fontSize="sm" color="gray.500" ml={2}>
@@ -501,7 +528,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
                 >
                   {likeCount}
                 </Button>
-                <Flex align="center" gap={1}><FaComment /> <span>{post.soLuotBinhLuan || 0}</span></Flex>
+                <Flex align="center" gap={1}><FaComment /> <span>{totalComments}</span></Flex>
               </Flex>
               {/* Danh sách bình luận */}
               <Box w="full" maxH="180px" overflowY="auto">
@@ -531,6 +558,10 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded }) => {
                         replyBox={replyBox}
                         setReplyBox={setReplyBox}
                         handleSendReply={handleSendReply}
+                        liked={commentLikes[c.id]?.liked || false}
+                        likeCount={commentLikes[c.id]?.count || 0}
+                        onLike={handleLikeComment}
+                        onUnlike={handleUnlikeComment}
                       />
                     ))}
                     {!showAll && totalComments > maxShow && (

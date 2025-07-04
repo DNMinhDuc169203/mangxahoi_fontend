@@ -9,19 +9,22 @@ import "./BaiDang.css";
 import { AiFillHeart, AiOutlineHeart } from "react-icons/ai";
 import { FaRegComment } from "react-icons/fa";
 import { RiSendPlaneLine } from "react-icons/ri";
-import CommentModal from "../BinhLuan/BinhLuanModal";
 import { useDisclosure } from "@chakra-ui/react";
 import axios from "axios";
 import { FaGlobeAsia, FaUserFriends, FaLock } from "react-icons/fa";
 import moment from "moment";
 import "moment/locale/vi";
+import PostDetailModal from "../BinhLuan/BaiDangChiTietModal";
 
-const PostCard = ({ post }) => {
+const PostCard = ({ post, onLikePost, onCommentAdded }) => {
   const [showDropDown, setShowDropDown] = useState(false);
   const [isPostLiked, setIsPostLiked] = useState(post?.daThich || false);
   const [isSaved, setIsSaved] = useState(false);
   const [likes, setLikes] = useState(post?.soLuotThich ?? 0);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailPost, setDetailPost] = useState(null);
+  const [commentCount, setCommentCount] = useState(post?.soLuotBinhLuan ?? 0);
 
   const handleSavePost = () => {
     setIsSaved(!isSaved);
@@ -33,25 +36,24 @@ const PostCard = ({ post }) => {
     const token = localStorage.getItem("token");
     try {
       if (!isPostLiked) {
-        // Thích bài viết
         setIsPostLiked(true);
         setLikes((prev) => prev + 1);
+        if (onLikePost) onLikePost(post.id, true);
         await axios.post(
           `http://localhost:8080/network/api/bai-viet/${post.id}/thich`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
-        // Bỏ thích bài viết
         setIsPostLiked(false);
         setLikes((prev) => (prev > 0 ? prev - 1 : 0));
+        if (onLikePost) onLikePost(post.id, false);
         await axios.delete(
           `http://localhost:8080/network/api/bai-viet/${post.id}/thich`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
     } catch (err) {
-      // Nếu lỗi, rollback lại trạng thái
       setIsPostLiked((prev) => !prev);
       setLikes(post?.soLuotThich ?? 10);
       alert("Có lỗi khi thực hiện thao tác thích/bỏ thích bài viết.");
@@ -66,8 +68,18 @@ const PostCard = ({ post }) => {
     onOpen();
   };
 
+  const handleOpenDetailModal = () => {
+    setDetailPost(post);
+    setIsDetailOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailOpen(false);
+    setDetailPost(null);
+  };
+
   // Dynamic data fallback
-  const avatar = post?.anhDaiDienNguoiDung || "https://cdn.pixabay.com/photo/2025/01/08/19/02/border-collie-9319990_640.jpg";
+  const avatar = post?.anhDaiDienNguoiDung || "./anhbandau.jpg";
   const username = post?.hoTenNguoiDung || "username";
   const content = post?.noiDung || "";
   const image = post?.mediaUrls && post.mediaUrls.length > 0 ? post.mediaUrls[0] : "https://cdn.pixabay.com/photo/2024/01/11/12/46/pitbull-8501582_640.jpg";
@@ -157,11 +169,31 @@ const PostCard = ({ post }) => {
 
         <div className="w-full">
           {post?.mediaUrls && post.mediaUrls.length > 0 ? (
-            <img
-              className="w-full"
-              src={image}
-              alt=""
-            />
+            post.mediaUrls.length === 1 ? (
+              <img
+                className="w-full object-cover rounded-md"
+                src={post.mediaUrls[0]}
+                alt=""
+                style={{ maxHeight: 400 }}
+              />
+            ) : (
+              <div className="grid grid-cols-2 gap-1 rounded-md overflow-hidden" style={{ maxHeight: 400 }}>
+                {post.mediaUrls.slice(0, 4).map((url, idx) => (
+                  <img
+                    key={idx}
+                    src={url}
+                    alt=""
+                    className="object-cover w-full h-40"
+                    style={{ aspectRatio: '1/1', objectFit: 'cover' }}
+                  />
+                ))}
+                {post.mediaUrls.length > 4 && (
+                  <div className="flex items-center justify-center bg-black bg-opacity-60 text-white text-lg font-bold absolute w-full h-full top-0 left-0">
+                    +{post.mediaUrls.length - 4}
+                  </div>
+                )}
+              </div>
+            )
           ) : (
             <div className="flex items-center justify-center w-full h-64 text-center p-4 text-gray-700 text-base font-medium" style={{ minHeight: 200 }}>
               <span style={{ wordBreak: "break-word" }}>{content}</span>
@@ -171,7 +203,7 @@ const PostCard = ({ post }) => {
 
         <div className="w-full py-2 px-5">
           <p>{likes} likes</p>
-          <p className="opacity-50 py-2 cursor-pointer">view all {comments} comments</p>
+          <p className="opacity-50 py-2 cursor-pointer">view all {commentCount} comments</p>
           {post?.mediaUrls && post.mediaUrls.length > 0 && (
             <div className="py-2">
               <span className="font-semibold mr-2">{username}</span>
@@ -195,7 +227,7 @@ const PostCard = ({ post }) => {
             )}
 
             <FaRegComment
-              onClick={handleOpenCommentModal}
+              onClick={handleOpenDetailModal}
               className="text-xl hover:opacity-50 cursor-pointer"
             />
             <RiSendPlaneLine className="text-xl hover:opacity-50 cursor-pointer" />
@@ -227,13 +259,19 @@ const PostCard = ({ post }) => {
         </div>
       </div>
 
-      <CommentModal
-        handlePostLike={handlePostLike}
-        onClose={onClose}
-        isOpen={isOpen}
-        handleSavePost={handleSavePost}
-        isPostLiked={isPostLiked}
-        isSaved={isSaved}
+      <PostDetailModal
+        post={detailPost}
+        isOpen={isDetailOpen}
+        onClose={handleCloseDetailModal}
+        onCommentAdded={() => {
+          setCommentCount((prev) => prev + 1);
+          if (onCommentAdded) onCommentAdded(post.id);
+        }}
+        onLikeChanged={(liked, likeCount) => {
+          setIsPostLiked(liked);
+          setLikes(likeCount);
+          if (onLikePost) onLikePost(post.id, liked);
+        }}
       />
     </div>
   );

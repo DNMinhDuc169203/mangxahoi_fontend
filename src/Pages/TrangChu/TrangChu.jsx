@@ -33,6 +33,20 @@ const HomePage = () => {
     fetchNewsfeed();
   }, []);
 
+  const handleLikePost = (postId, liked) => {
+    setPosts(prevPosts => prevPosts.map(p =>
+      p.id === postId ? { ...p, daThich: liked, soLuotThich: p.soLuotThich + (liked ? 1 : -1) } : p
+    ));
+  };
+
+  const handleCommentAdded = (postId) => {
+    setPosts(prevPosts =>
+      prevPosts.map(p =>
+        p.id === postId ? { ...p, soLuotBinhLuan: (p.soLuotBinhLuan || 0) + 1 } : p
+      )
+    );
+  };
+
   return (
     <div>
       <div className="mt-10 flex w-[100%] justify-center">
@@ -50,7 +64,14 @@ const HomePage = () => {
             ) : posts.length === 0 ? (
               <div>Không có bài viết nào.</div>
             ) : (
-              posts.map((post) => <PostCard key={post.id} post={post} />)
+              posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  onLikePost={handleLikePost}
+                  onCommentAdded={handleCommentAdded}
+                />
+              ))
             )}
           </div>
         </div>

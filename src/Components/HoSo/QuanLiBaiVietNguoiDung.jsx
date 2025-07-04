@@ -4,7 +4,7 @@ import { BiBookmark } from "react-icons/bi";
 import { RiVideoAddLine } from "react-icons/ri";
 import ReqUserPostCard from "./ChiTietBaiVietNguoiDung";
 import axios from "axios";
-import PostDetailModal from "./BaiDangChiTietModal";
+import PostDetailModal from "../BinhLuan/BaiDangChiTietModal";
 
 const ReqUserPostPart = ({ userId }) => {
   const [activeTab, setActiveTab] = useState("Post");
