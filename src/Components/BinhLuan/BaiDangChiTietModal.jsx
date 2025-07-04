@@ -112,6 +112,11 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
     }
   }, [isOpen]);
 
+  // Khi props post thay đổi, đồng bộ lại totalComments
+  useEffect(() => {
+    setTotalComments(post?.soLuotBinhLuan || 0);
+  }, [post?.soLuotBinhLuan]);
+
   if (!post) return null;
 
   const images = post.mediaUrls || [];
@@ -213,6 +218,14 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
       if (resetInput) resetInput("");
       fetchReplies(rootCommentId, 100);
       setShowAllReplies(prev => ({ ...prev, [rootCommentId]: true }));
+      // Fetch lại tổng số bình luận để đồng bộ tuyệt đối
+      try {
+        const res = await axios.get(
+          `http://localhost:8080/network/api/binh-luan/bai-viet/${postId}?page=0&size=1`,
+          token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+        );
+        setTotalComments(res.data.tongSoBinhLuan || 0);
+      } catch {}
     } catch {}
   };
 
@@ -528,7 +541,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
                 >
                   {likeCount}
                 </Button>
-                <Flex align="center" gap={1}><FaComment /> <span>{totalComments}</span></Flex>
+                <Flex align="center" gap={1}><FaComment /> <span>{post?.soLuotBinhLuan || 0}</span></Flex>
               </Flex>
               {/* Danh sách bình luận */}
               <Box w="full" maxH="180px" overflowY="auto">
