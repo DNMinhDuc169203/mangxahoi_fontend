@@ -85,7 +85,11 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
         </div>
       </div>
       <CreatePostModal onClose={onClose} isOpen={isOpen} />
-      <NotificationPanel onClose={onNotificationClose} isOpen={isNotificationOpen} />
+      <NotificationPanel 
+        onClose={onNotificationClose} 
+        isOpen={isNotificationOpen} 
+        userId={JSON.parse(localStorage.getItem('user') || '{}').id}
+      />
     </div>
   );
 };
