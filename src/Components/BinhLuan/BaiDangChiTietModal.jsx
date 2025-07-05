@@ -4,6 +4,7 @@ import { AiFillHeart, AiOutlineLeft, AiOutlineRight, AiOutlineGlobal, AiFillLock
 import { FaComment, FaRegSmile, FaUserFriends } from 'react-icons/fa';
 import { BsThreeDots } from 'react-icons/bs';
 import axios from "axios";
+import EmojiPicker from 'emoji-picker-react';
 
 function formatTimeAgo(dateString) {
   const now = new Date();
@@ -57,6 +58,8 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user.id;
+
+  const [showEmoji, setShowEmoji] = useState(false);
 
   React.useEffect(() => {
     setCurrentImg(0);
@@ -740,6 +743,11 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
     );
   };
 
+  const handleSelectEmoji = (emojiData) => {
+    setNewComment(newComment + emojiData.emoji);
+    setShowEmoji(false);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="4xl" isCentered>
       <ModalOverlay />
@@ -909,8 +917,13 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
             </VStack>
             {/* Khung nhập bình luận */}
             <Box borderTop="1px solid #eee" pt={3} bg="white" w="full" style={{ marginTop: 0 }}>
-              <Flex align="center" gap={2}>
-                <Icon as={FaRegSmile} boxSize={6} color="gray.500" />
+              <Flex align="center" gap={2} position="relative">
+                <Icon as={FaRegSmile} boxSize={6} color="gray.500" cursor="pointer" onClick={() => setShowEmoji(v => !v)} />
+                {showEmoji && (
+                  <Box position="absolute" bottom="40px" left={0} zIndex={20}>
+                    <EmojiPicker onEmojiClick={handleSelectEmoji} theme="light" />
+                  </Box>
+                )}
                 <Input
                   variant="unstyled"
                   placeholder="Bình luận..."
