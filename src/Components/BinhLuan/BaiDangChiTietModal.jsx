@@ -51,6 +51,13 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
   // Thêm state quản lý like và likeCount cho từng bình luận
   const [commentLikes, setCommentLikes] = useState({}); // { [binhLuanId]: { liked: bool, count: number } }
 
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editContent, setEditContent] = useState("");
+  const [menuOpenId, setMenuOpenId] = useState(null);
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userId = user.id;
+
   React.useEffect(() => {
     setCurrentImg(0);
   }, [post]);
@@ -116,6 +123,42 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
   useEffect(() => {
     setTotalComments(post?.soLuotBinhLuan || 0);
   }, [post?.soLuotBinhLuan]);
+
+  useEffect(() => {
+    const handleClick = () => setMenuOpenId(null);
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, []);
+
+  // Fetch toàn bộ replies cho tất cả bình luận gốc để tính tổng số bình luận (bao gồm cả reply)
+  useEffect(() => {
+    if (!comments || comments.length === 0) return;
+    const fetchAllReplies = async () => {
+      const replyData = {};
+      await Promise.all(
+        comments.map(async (c) => {
+          try {
+            const res = await axios.get(
+              `http://localhost:8080/network/api/binh-luan/${c.id}/phan-hoi?page=0&size=1000`,
+              token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+            );
+            replyData[c.id] = res.data.binhLuan || [];
+          } catch {
+            replyData[c.id] = [];
+          }
+        })
+      );
+      setReplies(replyData);
+    };
+    fetchAllReplies();
+    // eslint-disable-next-line
+  }, [comments]);
+
+  // Tính tổng số bình luận (bao gồm cả reply)
+  const totalAllComments = (comments || []).reduce(
+    (sum, c) => sum + 1 + (replies[c.id]?.length || 0),
+    0
+  );
 
   if (!post) return null;
 
@@ -218,6 +261,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
       if (resetInput) resetInput("");
       fetchReplies(rootCommentId, 100);
       setShowAllReplies(prev => ({ ...prev, [rootCommentId]: true }));
+      setReplyBox(prev => ({ ...prev, [rootCommentId]: false }));
       // Fetch lại tổng số bình luận để đồng bộ tuyệt đối
       try {
         const res = await axios.get(
@@ -349,9 +393,206 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
           <Avatar src={comment.anhDaiDienNguoiDung || "/anhbandau.jpg"} name={comment.hoTenNguoiDung || "Ẩn danh"} size={level === 0 ? "sm" : "xs"} />
           <Text fontWeight="bold" fontSize="sm">{comment.hoTenNguoiDung || "Ẩn danh"}</Text>
           <Box flex={1} />
-          <IconButton icon={<Box as="span" fontSize="xl">...</Box>} variant="ghost" size="xs" aria-label="menu" tabIndex={-1} />
+          <Box position="relative">
+            <IconButton
+              icon={<Box as="span" fontSize="xl">...</Box>}
+              variant="ghost"
+              size="xs"
+              aria-label="menu"
+              tabIndex={-1}
+              onClick={e => {
+                e.stopPropagation();
+                setMenuOpenId(comment.id === menuOpenId ? null : comment.id);
+              }}
+            />
+            {menuOpenId === comment.id && (
+              <Box
+                position="absolute"
+                top="calc(100% + 8px)"
+                right={0}
+                bg="white"
+                borderRadius="xl"
+                boxShadow="0 4px 16px rgba(0,0,0,0.15)"
+                minW="180px"
+                py={1}
+                zIndex={20}
+                overflow="hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Mũi tên tam giác */}
+                <Box
+                  position="absolute"
+                  top="-8px"
+                  right="18px"
+                  width="16px"
+                  height="8px"
+                  zIndex={21}
+                  style={{ pointerEvents: 'none' }}
+                >
+                  <svg width="16" height="8">
+                    <polygon points="0,8 8,0 16,8" fill="white" stroke="#e5e7eb" strokeWidth="1" />
+                  </svg>
+                </Box>
+                {comment.idNguoiDung?.toString() === userId?.toString() ? (
+                  <>
+                    <Box
+                      px={4}
+                      py={2}
+                      cursor="pointer"
+                      textAlign="center"
+                      fontSize="15px"
+                      fontWeight="500"
+                      _hover={{ bg: "gray.100" }}
+                      transition="background 0.2s"
+                      onClick={() => {
+                        setEditingCommentId(comment.id);
+                        setEditContent(comment.noiDung);
+                        setMenuOpenId(null);
+                      }}
+                    >
+                      Chỉnh sửa
+                    </Box>
+                    <Box
+                      px={4}
+                      py={2}
+                      cursor="pointer"
+                      textAlign="center"
+                      fontSize="15px"
+                      fontWeight="500"
+                      color="red.500"
+                      _hover={{ bg: "gray.100" }}
+                      transition="background 0.2s"
+                      onClick={async () => {
+                        if (window.confirm("Bạn có chắc muốn xóa bình luận này?")) {
+                          try {
+                            await axios.delete(
+                              `http://localhost:8080/network/api/binh-luan/${comment.id}`,
+                              { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            if (level === 0) {
+                              // Nếu là bình luận gốc, reload danh sách bình luận gốc
+                              const res = await axios.get(
+                                `http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}?page=0&size=10`,
+                                token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+                              );
+                              setComments(res.data.binhLuan || []);
+                              setTotalComments(res.data.tongSoBinhLuan || 0);
+                            } else {
+                              // Nếu là reply, reload lại bình luận gốc để cập nhật soLuotPhanHoi
+                              const res = await axios.get(
+                                `http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}?page=0&size=10`,
+                                token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+                              );
+                              setComments(res.data.binhLuan || []);
+                              setTotalComments(res.data.tongSoBinhLuan || 0);
+                              // Sau đó reload replies cho bình luận cha
+                              await fetchReplies(rootCommentId, 100);
+                            }
+                          } catch {
+                            alert("Xóa thất bại!");
+                          }
+                        }
+                        setMenuOpenId(null);
+                      }}
+                    >
+                      Xóa
+                    </Box>
+                  </>
+                ) : (
+                  <>
+                    <Box
+                      px={4}
+                      py={2}
+                      cursor="pointer"
+                      textAlign="center"
+                      fontSize="15px"
+                      fontWeight="500"
+                      _hover={{ bg: "gray.100" }}
+                      transition="background 0.2s"
+                      onClick={() => {
+                        setComments(prev => prev.filter(c => c.id !== comment.id));
+                        setMenuOpenId(null);
+                      }}
+                    >
+                      Ẩn bình luận
+                    </Box>
+                    <Box
+                      px={4}
+                      py={2}
+                      cursor="pointer"
+                      textAlign="center"
+                      fontSize="15px"
+                      fontWeight="500"
+                      color="red.500"
+                      _hover={{ bg: "gray.100" }}
+                      transition="background 0.2s"
+                      onClick={() => {
+                        alert("Đã gửi báo cáo bình luận!");
+                        setMenuOpenId(null);
+                      }}
+                    >
+                      Báo cáo bình luận
+                    </Box>
+                  </>
+                )}
+              </Box>
+            )}
+          </Box>
         </Flex>
-        <Box ml={level === 0 ? 10 : 8} fontSize={level === 0 ? "md" : "sm"} whiteSpace="pre-line">{comment.noiDung}</Box>
+        {editingCommentId === comment.id ? (
+          <Flex gap={2} mt={1} ml={level === 0 ? 10 : 8}>
+            <Input
+              value={editContent}
+              onChange={e => setEditContent(e.target.value)}
+              size="sm"
+              flex={1}
+            />
+            <Button
+              size="sm"
+              colorScheme="blue"
+              onClick={async () => {
+                try {
+                  await axios.put(
+                    `http://localhost:8080/network/api/binh-luan/${comment.id}`,
+                    null,
+                    {
+                      params: { noiDung: editContent },
+                      headers: { Authorization: `Bearer ${token}` }
+                    }
+                  );
+                  if (level === 0) {
+                    // Nếu là bình luận gốc, reload danh sách bình luận gốc
+                    const res = await axios.get(
+                      `http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}?page=0&size=10`,
+                      token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+                    );
+                    setComments(res.data.binhLuan || []);
+                    setTotalComments(res.data.tongSoBinhLuan || 0);
+                  } else {
+                    // Nếu là reply, reload replies cho bình luận cha
+                    await fetchReplies(rootCommentId, 100);
+                  }
+                  setEditingCommentId(null);
+                } catch {
+                  alert("Chỉnh sửa thất bại!");
+                }
+              }}
+              isDisabled={!editContent.trim()}
+            >
+              Lưu
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setEditingCommentId(null)}
+            >
+              Hủy
+            </Button>
+          </Flex>
+        ) : (
+          <Box ml={level === 0 ? 10 : 8} fontSize={level === 0 ? "md" : "sm"} whiteSpace="pre-line">
+            {comment.noiDung}
+          </Box>
+        )}
         <Flex ml={level === 0 ? 10 : 8} align="center" gap={3} fontSize="xs" color="gray.500" mt={0.5}>
           <Text>{comment.ngayTao ? formatTimeAgo(comment.ngayTao) : ""}</Text>
           <Text
@@ -543,7 +784,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
                 >
                   {likeCount}
                 </Button>
-                <Flex align="center" gap={1}><FaComment /> <span>{post?.soLuotBinhLuan || 0}</span></Flex>
+                <Flex align="center" gap={1}><FaComment /> <span>{totalAllComments}</span></Flex>
               </Flex>
               {/* Danh sách bình luận */}
               <Box w="full" maxH="180px" overflowY="auto">
@@ -589,7 +830,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
               </Box>
             </VStack>
             {/* Khung nhập bình luận */}
-            <Box borderTop="1px solid #eee" pt={3} mt={3} bg="white" position="sticky" bottom={0} left={0} w="full">
+            <Box borderTop="1px solid #eee" pt={3} bg="white" w="full" style={{ marginTop: 0 }}>
               <Flex align="center" gap={2}>
                 <Icon as={FaRegSmile} boxSize={6} color="gray.500" />
                 <Input
