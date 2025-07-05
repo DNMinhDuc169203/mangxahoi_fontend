@@ -150,9 +150,9 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
         token ? { headers: { Authorization: `Bearer ${token}` } } : {}
       );
       setComments(res.data.binhLuan || []);
-      setTotalComments((prev) => prev + 1);
+      setTotalComments(res.data.tongSoBinhLuan || 0);
       setLoadingComments(false);
-      if (typeof onCommentAdded === "function") onCommentAdded();
+      if (typeof onCommentAdded === "function") onCommentAdded(post.id);
     } catch (err) {
       setLoadingComments(false);
     }
@@ -225,6 +225,8 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
           token ? { headers: { Authorization: `Bearer ${token}` } } : {}
         );
         setTotalComments(res.data.tongSoBinhLuan || 0);
+        // Cập nhật số lượng bình luận ở component cha
+        if (typeof onCommentAdded === "function") onCommentAdded(postId, res.data.tongSoBinhLuan || 0);
       } catch {}
     } catch {}
   };

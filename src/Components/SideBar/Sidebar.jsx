@@ -4,11 +4,17 @@ import { menu } from "./SidebarConfig";
 import { useNavigate } from "react-router-dom";
 import { useDisclosure } from "@chakra-ui/react";
 import CreatePostModal from "../BaiViet/TaoBaiDangModal";
+import NotificationPanel from "../ThongBao/NotificationPanel";
 
 const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
   const [activeTab, setActiveTab] = useState();
   const navigate = useNavigate();
   const { isOpen, onClose, onOpen } = useDisclosure();
+  const { 
+    isOpen: isNotificationOpen, 
+    onClose: onNotificationClose, 
+    onOpen: onNotificationOpen 
+  } = useDisclosure();
 
   // Khi search đóng, activeTab không còn là 'Search'
   useEffect(() => {
@@ -37,6 +43,9 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
     else if (title === "Create") {
       onOpen();
     }
+    else if (title === "Notification") {
+      onNotificationOpen();
+    }
     if (title === "Search") {
       setIsSearchVisible(true);
     }
@@ -58,9 +67,14 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
           </div>}
           <div className="mt-10">
             {menu.map((item) => (
-              <div key={item.title} onClick={() => handleTabClick(item.title)} className="flex items-center mb-5 cursor-pointer text-lg">
+              <div key={item.title} onClick={() => handleTabClick(item.title)} className="flex items-center mb-5 cursor-pointer text-lg relative">
                 {activeTab === item.title ? item.activeIcon : item.icon}
                 {activeTab !== "Search" && <p className={`${activeTab === item.title ? "font-bold text-red-500" : "font-semyibold"}`}>{item.title}</p>}
+                {item.title === "Notification" && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-badge">
+                    3
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -71,6 +85,7 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
         </div>
       </div>
       <CreatePostModal onClose={onClose} isOpen={isOpen} />
+      <NotificationPanel onClose={onNotificationClose} isOpen={isNotificationOpen} />
     </div>
   );
 };

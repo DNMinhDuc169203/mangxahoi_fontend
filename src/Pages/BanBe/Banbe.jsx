@@ -116,7 +116,7 @@ const FriendsPage = () => {
               received.map(user => (
                 <FriendCard
                   key={user.idLoiMoi}
-                  user={{ hoTen: user.hoTen, anhDaiDien: user.anhDaiDien, email: user.email }}
+                  user={{ hoTen: user.hoTenNguoiGui, anhDaiDien: user.anhDaiDienNguoiGui, email: user.emailNguoiGui }}
                   actions={[
                     <Button colorScheme="blue" size="sm" onClick={() => handleAccept(user.idLoiMoi)}>Chấp nhận</Button>,
                     <Button colorScheme="gray" size="sm" onClick={() => handleDecline(user.idLoiMoi)}>Từ chối</Button>

@@ -26,6 +26,18 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
   const [detailPost, setDetailPost] = useState(null);
   const [commentCount, setCommentCount] = useState(post?.soLuotBinhLuan ?? 0);
 
+  // Đồng bộ commentCount khi post thay đổi
+  React.useEffect(() => {
+    setCommentCount(post?.soLuotBinhLuan ?? 0);
+  }, [post?.soLuotBinhLuan]);
+
+  // Đồng bộ commentCount khi detailPost thay đổi
+  React.useEffect(() => {
+    if (detailPost) {
+      setCommentCount(detailPost?.soLuotBinhLuan ?? 0);
+    }
+  }, [detailPost?.soLuotBinhLuan]);
+
   const handleSavePost = () => {
     setIsSaved(!isSaved);
   };
@@ -71,6 +83,8 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
   const handleOpenDetailModal = () => {
     setDetailPost(post);
     setIsDetailOpen(true);
+    // Đồng bộ commentCount khi mở modal
+    setCommentCount(post?.soLuotBinhLuan ?? 0);
   };
 
   const handleCloseDetailModal = () => {
@@ -83,7 +97,6 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
   const username = post?.hoTenNguoiDung || "username";
   const content = post?.noiDung || "";
   const image = post?.mediaUrls && post.mediaUrls.length > 0 ? post.mediaUrls[0] : "https://cdn.pixabay.com/photo/2024/01/11/12/46/pitbull-8501582_640.jpg";
-  const comments = post?.soLuotBinhLuan ?? 9;
 
   moment.locale("vi");
 
