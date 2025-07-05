@@ -463,6 +463,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
                       _hover={{ bg: "gray.100" }}
                       transition="background 0.2s"
                       onClick={async () => {
+                        console.log('Đã nhấn xóa bình luận (của mình)', comment.id);
                         if (window.confirm("Bạn có chắc muốn xóa bình luận này?")) {
                           try {
                             await axios.delete(
@@ -470,7 +471,6 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
                               { headers: { Authorization: `Bearer ${token}` } }
                             );
                             if (level === 0) {
-                              // Nếu là bình luận gốc, reload danh sách bình luận gốc
                               const res = await axios.get(
                                 `http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}?page=0&size=10`,
                                 token ? { headers: { Authorization: `Bearer ${token}` } } : {}
@@ -478,24 +478,102 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
                               setComments(res.data.binhLuan || []);
                               setTotalComments(res.data.tongSoBinhLuan || 0);
                             } else {
-                              // Nếu là reply, reload lại bình luận gốc để cập nhật soLuotPhanHoi
                               const res = await axios.get(
                                 `http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}?page=0&size=10`,
                                 token ? { headers: { Authorization: `Bearer ${token}` } } : {}
                               );
                               setComments(res.data.binhLuan || []);
                               setTotalComments(res.data.tongSoBinhLuan || 0);
-                              // Sau đó reload replies cho bình luận cha
                               await fetchReplies(rootCommentId, 100);
                             }
-                          } catch {
+                          } catch (err) {
                             alert("Xóa thất bại!");
+                            console.error(err);
                           }
                         }
                         setMenuOpenId(null);
                       }}
                     >
                       Xóa
+                    </Box>
+                  </>
+                ) : post.idNguoiDung?.toString() === userId?.toString() ? (
+                  <>
+                    <Box
+                      px={4}
+                      py={2}
+                      cursor="pointer"
+                      textAlign="center"
+                      fontSize="15px"
+                      fontWeight="500"
+                      _hover={{ bg: "gray.100" }}
+                      transition="background 0.2s"
+                      onClick={async () => {
+                        console.log('Đã nhấn xóa bình luận (chủ bài viết)', comment.id);
+                        if (window.confirm("Bạn có chắc muốn xóa bình luận này?")) {
+                          try {
+                            await axios.delete(
+                              `http://localhost:8080/network/api/binh-luan/${comment.id}`,
+                              { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            if (level === 0) {
+                              const res = await axios.get(
+                                `http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}?page=0&size=10`,
+                                token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+                              );
+                              setComments(res.data.binhLuan || []);
+                              setTotalComments(res.data.tongSoBinhLuan || 0);
+                            } else {
+                              const res = await axios.get(
+                                `http://localhost:8080/network/api/binh-luan/bai-viet/${post.id}?page=0&size=10`,
+                                token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+                              );
+                              setComments(res.data.binhLuan || []);
+                              setTotalComments(res.data.tongSoBinhLuan || 0);
+                              await fetchReplies(rootCommentId, 100);
+                            }
+                          } catch (err) {
+                            alert("Xóa thất bại!");
+                            console.error(err);
+                          }
+                        }
+                        setMenuOpenId(null);
+                      }}
+                    >
+                      Xóa
+                    </Box>
+                    <Box
+                      px={4}
+                      py={2}
+                      cursor="pointer"
+                      textAlign="center"
+                      fontSize="15px"
+                      fontWeight="500"
+                      _hover={{ bg: "gray.100" }}
+                      transition="background 0.2s"
+                      onClick={() => {
+                        setComments(prev => prev.filter(c => c.id !== comment.id));
+                        setMenuOpenId(null);
+                      }}
+                    >
+                      Ẩn bình luận
+                    </Box>
+                    <Box
+                      px={4}
+                      py={2}
+                      cursor="pointer"
+                      textAlign="center"
+                      fontSize="15px"
+                      fontWeight="500"
+                      color="red.500"
+                      _hover={{ bg: "gray.100" }}
+                      transition="background 0.2s"
+                      onClick={() => {
+                        alert("Đã gửi báo cáo bình luận!");
+                        setMenuOpenId(null);
+                      }}
+                    >
+                      Báo cáo bình luận
                     </Box>
                   </>
                 ) : (

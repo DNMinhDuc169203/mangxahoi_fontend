@@ -15,6 +15,7 @@ import { FaGlobeAsia, FaUserFriends, FaLock } from "react-icons/fa";
 import moment from "moment";
 import "moment/locale/vi";
 import PostDetailModal from "../BinhLuan/BaiDangChiTietModal";
+import DanhSachNguoiThichModal from "./DanhSachNguoiThichModal";
 
 const PostCard = ({ post, onLikePost, onCommentAdded }) => {
   const [showDropDown, setShowDropDown] = useState(false);
@@ -25,6 +26,7 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailPost, setDetailPost] = useState(null);
   const [commentCount, setCommentCount] = useState(post?.soLuotBinhLuan ?? 0);
+  const [isLikeModalOpen, setIsLikeModalOpen] = useState(false);
 
   // Đồng bộ commentCount khi post thay đổi
   React.useEffect(() => {
@@ -90,6 +92,14 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
   const handleCloseDetailModal = () => {
     setIsDetailOpen(false);
     setDetailPost(null);
+  };
+
+  const handleOpenLikeModal = () => {
+    setIsLikeModalOpen(true);
+  };
+
+  const handleCloseLikeModal = () => {
+    setIsLikeModalOpen(false);
   };
 
   // Dynamic data fallback
@@ -214,16 +224,6 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
           )}
         </div>
 
-        <div className="w-full py-2 px-5">
-          <p>{likes} likes</p>
-          <p className="opacity-50 py-2 cursor-pointer">view all {commentCount} comments</p>
-          {post?.mediaUrls && post.mediaUrls.length > 0 && (
-            <div className="py-2">
-              <span className="font-semibold mr-2">{username}</span>
-              <span>{content}</span>
-            </div>
-          )}
-        </div>
 
         <div className="flex justify-between items-center w-full px-5 py-4">
           <div className="flex items-center space-x-2">
@@ -259,7 +259,21 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
             )}
           </div>
         </div>
-
+        <div className="w-full py-2 px-5">
+          <p 
+            className="cursor-pointer hover:underline font-medium" 
+            onClick={handleOpenLikeModal}
+          >
+            {likes} người thích
+          </p>
+          <p className="opacity-50 py-2 cursor-pointer" onClick={handleOpenDetailModal}>Xem tất cả {commentCount} bình luận</p>
+          {post?.mediaUrls && post.mediaUrls.length > 0 && (
+            <div className="py-2">
+              <span className="font-semibold mr-2">{username}</span>
+              <span>{content}</span>
+            </div>
+          )}
+        </div>
         <div>
           <div className="flex w-full items-center px-5">
             <BsEmojiSmile />
@@ -285,6 +299,13 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
           setLikes(likeCount);
           if (onLikePost) onLikePost(post.id, liked);
         }}
+      />
+
+      <DanhSachNguoiThichModal
+        isOpen={isLikeModalOpen}
+        onClose={handleCloseLikeModal}
+        baiVietId={post?.id}
+        soLuotThich={likes}
       />
     </div>
   );
