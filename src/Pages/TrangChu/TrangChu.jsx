@@ -18,6 +18,8 @@ const HomePage = () => {
   const [hasMore, setHasMore] = useState(true);
   const size = 10;
   const loadingMoreRef = useRef(false);
+  const [modalPost, setModalPost] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchNewsfeed = async () => {
@@ -78,6 +80,15 @@ const HomePage = () => {
     );
   };
 
+  const handlePostDeleted = (postId) => {
+    setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
+  };
+
+  const handlePostUpdated = (updatedPost) => {
+    setPosts(prevPosts => prevPosts.map(p => p.id === updatedPost.id ? updatedPost : p));
+    setModalPost(prev => (prev && prev.id === updatedPost.id ? updatedPost : prev));
+  };
+
   return (
     <div>
       <div className="mt-10 flex w-[100%] justify-center">
@@ -101,6 +112,8 @@ const HomePage = () => {
                   post={post}
                   onLikePost={handleLikePost}
                   onCommentAdded={handleCommentAdded}
+                  onPostDeleted={handlePostDeleted}
+                  onPostUpdated={handlePostUpdated}
                 />
               ))
             )}

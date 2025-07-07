@@ -17,9 +17,12 @@ import "moment/locale/vi";
 import PostDetailModal from "../BinhLuan/BaiDangChiTietModal";
 import DanhSachNguoiThichModal from "./DanhSachNguoiThichModal";
 import EmojiPicker from 'emoji-picker-react';
+import ModalTuyChonBaiViet from './ModalTuyChonBaiViet';
+import ModalBaoCaoBaiViet from './ModalBaoCaoBaiViet';
+import ModalChinhSuaBaiViet from './ModalChinhSuaBaiViet';
+import ModalChonQuyenRiengTu from './ModalChonQuyenRiengTu';
 
-
-const PostCard = ({ post, onLikePost, onCommentAdded }) => {
+const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdated }) => {
   const [showDropDown, setShowDropDown] = useState(false);
   const [isPostLiked, setIsPostLiked] = useState(post?.daThich || false);
   const [isSaved, setIsSaved] = useState(false);
@@ -32,6 +35,15 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
   const [commentInput, setCommentInput] = useState("");
   const toast = useToast();
   const [showEmoji, setShowEmoji] = useState(false);
+  const [isOptionModalOpen, setIsOptionModalOpen] = useState(false);
+  
+  // States cho các modal mới
+  const [isBaoCaoModalOpen, setIsBaoCaoModalOpen] = useState(false);
+  const [isChinhSuaModalOpen, setIsChinhSuaModalOpen] = useState(false);
+  const [isQuyenRiengTuModalOpen, setIsQuyenRiengTuModalOpen] = useState(false);
+  
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isOwnPost = post.idNguoiDung === user.id;
 
   // Đồng bộ commentCount khi post thay đổi
   React.useEffect(() => {
@@ -189,6 +201,70 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
     }
   };
 
+  // Các hàm xử lý API thực sự
+  const handleEdit = () => {
+    setIsOptionModalOpen(false);
+    setIsChinhSuaModalOpen(true);
+  };
+
+  const handlePrivacy = () => {
+    setIsOptionModalOpen(false);
+    setIsQuyenRiengTuModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    setIsOptionModalOpen(false);
+    
+    if (!window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(
+        `http://localhost:8080/network/api/bai-viet/${post.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast({
+        title: 'Đã xóa bài viết thành công',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+        position: 'top'
+      });
+
+      if (onPostDeleted) {
+        onPostDeleted(post.id);
+      }
+    } catch (error) {
+      console.error('Lỗi khi xóa bài viết:', error);
+      toast({
+        title: 'Xóa bài viết thất bại',
+        description: 'Vui lòng thử lại sau',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+        position: 'top'
+      });
+    }
+  };
+
+  const handleReport = () => {
+    setIsOptionModalOpen(false);
+    setIsBaoCaoModalOpen(true);
+  };
+
+  const handlePostUpdated = (updatedPost) => {
+    if (onPostUpdated) {
+      onPostUpdated(updatedPost);
+    }
+    // Cập nhật local state nếu cần
+    if (detailPost && detailPost.id === updatedPost.id) {
+      setDetailPost(updatedPost);
+    }
+  };
+
   return (
     <div>
       <div className="border rounded-md w-full">
@@ -211,14 +287,16 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
           </div>
 
           <div className="dropdown">
-            <BsThreeDots className="dots" onClick={handleclick} />
-            <div className="dropdown-content">
-              {showDropDown && (
-                <p className="bg-black text-white py-1 px-4 rounded-md cursor-pointer ">
-                  Delete
-                </p>
-              )}
-            </div>
+            <BsThreeDots className="dots" onClick={() => setIsOptionModalOpen(true)} />
+            <ModalTuyChonBaiViet
+              isOpen={isOptionModalOpen}
+              onClose={() => setIsOptionModalOpen(false)}
+              isOwnPost={isOwnPost}
+              onEdit={handleEdit}
+              onPrivacy={handlePrivacy}
+              onDelete={handleDelete}
+              onReport={handleReport}
+            />
           </div>
         </div>
 
@@ -346,6 +424,28 @@ const PostCard = ({ post, onLikePost, onCommentAdded }) => {
         onClose={handleCloseLikeModal}
         baiVietId={post?.id}
         soLuotThich={likes}
+      />
+
+      {/* Các modal mới */}
+      <ModalBaoCaoBaiViet
+        isOpen={isBaoCaoModalOpen}
+        onClose={() => setIsBaoCaoModalOpen(false)}
+        postId={post?.id}
+        postTitle={post?.noiDung}
+      />
+
+      <ModalChinhSuaBaiViet
+        isOpen={isChinhSuaModalOpen}
+        onClose={() => setIsChinhSuaModalOpen(false)}
+        post={post}
+        onPostUpdated={handlePostUpdated}
+      />
+
+      <ModalChonQuyenRiengTu
+        isOpen={isQuyenRiengTuModalOpen}
+        onClose={() => setIsQuyenRiengTuModalOpen(false)}
+        post={post}
+        onPostUpdated={handlePostUpdated}
       />
     </div>
   );
