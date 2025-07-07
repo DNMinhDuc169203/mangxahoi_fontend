@@ -390,7 +390,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
     return (
       <Box mb={2} ml={level * 6}>
         <Flex align="center" gap={2}>
-          <Avatar src={comment.anhDaiDienNguoiDung || "/anhbandau.jpg"} name={comment.hoTenNguoiDung || "Ẩn danh"} size={level === 0 ? "sm" : "xs"} />
+          <Avatar src={comment.anhDaiDienNguoiDung || "/anhbandau.jpg"}  size={level === 0 ? "sm" : "xs"} />
           <Text fontWeight="bold" fontSize="sm">{comment.hoTenNguoiDung || "Ẩn danh"}</Text>
           <Box flex={1} />
           <Box position="relative">

@@ -25,7 +25,7 @@ export const useNotificationCount = (userId) => {
     fetchUnreadCount();
     
     // Có thể thêm polling để cập nhật real-time
-    const interval = setInterval(fetchUnreadCount, 30000); // Cập nhật mỗi 30 giây
+    const interval = setInterval(fetchUnreadCount, 30000); // Cập nh  ật mỗi 30 giây
     
     return () => clearInterval(interval);
   }, [userId]);

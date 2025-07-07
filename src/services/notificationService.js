@@ -50,7 +50,7 @@ export const notificationService = {
   // Đánh dấu thông báo đã đọc (nếu có API này)
   markAsRead: async (notificationId) => {
     try {
-      const response = await apiClient.put(`/thong-bao/${notificationId}/doc`);
+      const response = await apiClient.put(`/thong-bao/da-doc/${notificationId}`);
       return response.data;
     } catch (error) {
       console.error('Lỗi khi đánh dấu đã đọc:', error);

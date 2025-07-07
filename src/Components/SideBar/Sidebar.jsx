@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { useDisclosure } from "@chakra-ui/react";
 import CreatePostModal from "../BaiViet/TaoBaiDangModal";
 import NotificationPanel from "../ThongBao/NotificationPanel";
+import { useNotificationContext } from '../../contexts/NotificationContext';
+import BaiDangChiTietModal from "../BinhLuan/BaiDangChiTietModal";
 
 const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
   const [activeTab, setActiveTab] = useState();
@@ -15,6 +17,9 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
     onClose: onNotificationClose, 
     onOpen: onNotificationOpen 
   } = useDisclosure();
+  const { unreadCount } = useNotificationContext();
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [postDetail, setPostDetail] = useState(null);
 
   // Khi search đóng, activeTab không còn là 'Search'
   useEffect(() => {
@@ -70,9 +75,9 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
               <div key={item.title} onClick={() => handleTabClick(item.title)} className="flex items-center mb-5 cursor-pointer text-lg relative">
                 {activeTab === item.title ? item.activeIcon : item.icon}
                 {activeTab !== "Search" && <p className={`${activeTab === item.title ? "font-bold text-red-500" : "font-semyibold"}`}>{item.title}</p>}
-                {item.title === "Notification" && (
+                {item.title === "Notification" && unreadCount > 0 && (
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-badge">
-                    3
+                    {unreadCount}
                   </div>
                 )}
               </div>
@@ -89,7 +94,19 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
         onClose={onNotificationClose} 
         isOpen={isNotificationOpen} 
         userId={JSON.parse(localStorage.getItem('user') || '{}').id}
+        onShowPostModal={(post) => {
+          setPostDetail(post);
+          setShowPostModal(true);
+          onNotificationClose();
+        }}
       />
+      {showPostModal && postDetail && (
+        <BaiDangChiTietModal
+          post={postDetail}
+          isOpen={showPostModal}
+          onClose={() => setShowPostModal(false)}
+        />
+      )}
     </div>
   );
 };

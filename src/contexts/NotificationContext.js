@@ -24,6 +24,9 @@ export const NotificationProvider = ({ children, userId }) => {
     // Panel state
     isPanelOpen,
     setIsPanelOpen,
+
+      setNotifications: notificationData.setNotifications,
+    fetchNotifications: notificationData.fetchNotifications,
     
     // Notification data
     notifications: notificationData.notifications,
