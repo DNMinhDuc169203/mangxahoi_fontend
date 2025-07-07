@@ -51,6 +51,17 @@ const ReqUserPostPart = ({ userId }) => {
     setModalPost(null);
   };
 
+  const handlePostDeleted = (postId) => {
+    setPosts(prev => prev.filter(p => p.id !== postId));
+    setIsModalOpen(false);
+    setModalPost(null);
+  };
+
+  const handlePostUpdated = (updatedPost) => {
+    setPosts(prev => prev.map(p => p.id === updatedPost.id ? updatedPost : p));
+    setModalPost(prev => (prev && prev.id === updatedPost.id ? updatedPost : prev));
+  };
+
   return (
     <div>
       <div className="flex space-x-14 border-t relative">
@@ -90,6 +101,8 @@ const ReqUserPostPart = ({ userId }) => {
             setPosts(prev => prev.map(p => p.id === modalPost.id ? { ...p, soLuotBinhLuan: (p.soLuotBinhLuan || 0) + 1 } : p));
             setModalPost(prev => prev ? { ...prev, soLuotBinhLuan: (prev.soLuotBinhLuan || 0) + 1 } : prev);
           }}
+          onPostDeleted={handlePostDeleted}
+          onPostUpdated={handlePostUpdated}
         />
         {/* Các tab khác giữ nguyên hoặc render nội dung khác nếu muốn */}
       </div>
