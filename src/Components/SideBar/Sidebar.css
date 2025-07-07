@@ -1,0 +1,8 @@
+.toast-red {
+ 
+  color: black !important;
+  font-weight: bold;
+}
+.toast-red .Toastify__progress-bar {
+  background: red !important; /* Màu đỏ đậm, bạn có thể chọn mã màu khác */
+}

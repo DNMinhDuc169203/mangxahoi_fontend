@@ -432,19 +432,48 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged,
     };
 
     return (
-      <Box key={comment.id} ml={level * 4} mt={2} p={3} bg="gray.50" borderRadius="md">
-        <Flex justify="space-between" align="start">
-          <Flex align="center" gap={2} flex={1}>
-            <Avatar size="sm" src={comment.anhDaiDienNguoiDung || "/anhbandau.jpg"} />
-            <Box flex={1}>
-              <Text fontWeight="bold" fontSize="sm">{comment.hoTenNguoiDung}</Text>
-              <Text fontSize="sm">{comment.noiDung}</Text>
-              <Flex align="center" gap={4} mt={1}>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  onClick={() => onLike(comment.id)}
-                  leftIcon={<AiFillHeart color={liked ? "red" : "gray"} />}
+
+      <Box mb={2} ml={level * 6}>
+        <Flex align="center" gap={2}>
+          <Avatar src={comment.anhDaiDienNguoiDung || "/anhbandau.jpg"}  size={level === 0 ? "sm" : "xs"} />
+          <Text fontWeight="bold" fontSize="sm">{comment.hoTenNguoiDung || "Ẩn danh"}</Text>
+          <Box flex={1} />
+          <Box position="relative">
+            <IconButton
+              icon={<Box as="span" fontSize="xl">...</Box>}
+              variant="ghost"
+              size="xs"
+              aria-label="menu"
+              tabIndex={-1}
+              onClick={e => {
+                e.stopPropagation();
+                setMenuOpenId(comment.id === menuOpenId ? null : comment.id);
+              }}
+            />
+            {menuOpenId === comment.id && (
+              <Box
+                position="absolute"
+                top="calc(100% + 8px)"
+                right={0}
+                bg="white"
+                borderRadius="xl"
+                boxShadow="0 4px 16px rgba(0,0,0,0.15)"
+                minW="180px"
+                py={1}
+                zIndex={20}
+                overflow="hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Mũi tên tam giác */}
+                <Box
+                  position="absolute"
+                  top="-8px"
+                  right="18px"
+                  width="16px"
+                  height="8px"
+                  zIndex={21}
+                  style={{ pointerEvents: 'none' }}
+
                 >
                   {likeCount}
                 </Button>

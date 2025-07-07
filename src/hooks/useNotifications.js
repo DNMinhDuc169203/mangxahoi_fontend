@@ -6,6 +6,26 @@ export const useNotifications = (userId) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  function formatTimeAgo(dateString) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now - date;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+  
+    if (diffDay >= 1) {
+      return `${diffDay} ngày trước`;
+    } else if (diffHour >= 1) {
+      return `${diffHour} giờ trước`;
+    } else if (diffMin >= 1) {
+      return `${diffMin} phút trước`;
+    } else {
+      return `Vừa xong`;
+    }
+  }
+
   // Chuyển đổi thông báo từ API sang format hiển thị
   const transformNotification = (apiNotification) => {
     const now = new Date();
@@ -14,7 +34,7 @@ export const useNotifications = (userId) => {
     
     // Xác định nhóm thời gian
     let group = 'earlier';
-    if (diffInDays <= 30) {
+    if (diffInDays < 1) {
       group = 'this_month';
     }
 
@@ -50,27 +70,14 @@ export const useNotifications = (userId) => {
     }
 
     // Format thời gian
-    let timeDisplay = '';
-    if (diffInDays === 0) {
-      timeDisplay = 'Hôm nay';
-    } else if (diffInDays === 1) {
-      timeDisplay = 'Hôm qua';
-    } else if (diffInDays < 7) {
-      timeDisplay = `${diffInDays} ngày trước`;
-    } else if (diffInDays < 30) {
-      const weeks = Math.floor(diffInDays / 7);
-      timeDisplay = `${weeks} tuần trước`;
-    } else {
-      const months = Math.floor(diffInDays / 30);
-      timeDisplay = `${months} tháng trước`;
-    }
+    let timeDisplay = formatTimeAgo(apiNotification.ngayTao);
 
     return {
       id: apiNotification.id,
       type,
       message,
       time: timeDisplay,
-      avatar,
+      anhDaiDienNguoiGui: apiNotification.anhDaiDienNguoiGui,
       group,
       users,
       isFollowing,
@@ -148,6 +155,7 @@ export const useNotifications = (userId) => {
     fetchNotifications,
     markAsRead,
     deleteNotification,
-    addNotification
+    addNotification,
+    setNotifications 
   };
 }; 

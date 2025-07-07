@@ -4,9 +4,11 @@ import './NotificationModal.css';
 import { AiOutlineHeart, AiOutlineComment, AiOutlineUserAdd, AiOutlineLike } from 'react-icons/ai';
 import { BiTime } from 'react-icons/bi';
 import { useNotificationContext } from '../../contexts/NotificationContext';
+import axios from "axios";
+import BaiDangChiTietModal from "../BinhLuan/BaiDangChiTietModal";
 
 // Component cho trường hợp có context
-const NotificationPanelWithContext = ({ isOpen, onClose }) => {
+const NotificationPanelWithContext = ({ isOpen, onClose, onShowPostModal }) => {
   const panelRef = useRef();
   const { 
     thisMonth, 
@@ -14,7 +16,9 @@ const NotificationPanelWithContext = ({ isOpen, onClose }) => {
     loading, 
     error, 
     markAsRead, 
-    deleteNotification
+    deleteNotification,
+    setNotifications,
+    fetchNotifications
   } = useNotificationContext();
 
   // Đóng panel khi click ra ngoài
@@ -59,32 +63,67 @@ const NotificationPanelWithContext = ({ isOpen, onClose }) => {
     );
   }
 
+  // Hàm xử lý khi click vào notification
+  const handleNotificationClick = async (notification) => {
+    const idBaiViet = notification.idBaiViet || notification.originalData?.idBaiViet || notification.originalData?.id;
+    if (idBaiViet) {
+      const token = localStorage.getItem("token");
+      try {
+        const res = await axios.get(
+          `http://localhost:8080/network/api/bai-viet/${idBaiViet}`,
+          token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+        );
+        onShowPostModal && onShowPostModal(res.data);
+      } catch (err) {
+        alert("Không thể tải chi tiết bài viết!");
+      }
+    }
+  };
+
+  // Sắp xếp thông báo mới nhất lên đầu
+  const sortedThisMonth = [...thisMonth].sort((a, b) => {
+    const dateA = new Date(a.originalData?.ngayTao || a.ngayTao);
+    const dateB = new Date(b.originalData?.ngayTao || b.ngayTao);
+    return dateB - dateA;
+  });
+  const sortedEarlier = [...earlier].sort((a, b) => {
+    const dateA = new Date(a.originalData?.ngayTao || a.ngayTao);
+    const dateB = new Date(b.originalData?.ngayTao || b.ngayTao);
+    return dateB - dateA;
+  });
+
   return createPortal(
     <div className="notification-panel" ref={panelRef}>
       <h2 className="text-2xl font-bold px-6 pt-6 pb-2">Notifications</h2>
       <div className="divide-y divide-gray-200">
-        {thisMonth.length > 0 && (
+        {sortedThisMonth.length > 0 && (
           <div className="mb-2">
-            <div className="font-semibold text-gray-700 px-6 py-2">This month</div>
-            {thisMonth.map(n => (
+            <div className="font-semibold text-gray-700 px-6 py-2">Hôm Nay</div>
+            {sortedThisMonth.map(n => (
               <NotificationItem 
                 key={n.id} 
                 notification={n} 
                 onMarkAsRead={markAsRead}
                 onDelete={deleteNotification}
+                onNotificationClick={handleNotificationClick}
+                setNotifications={setNotifications}
+                fetchNotifications={fetchNotifications}
               />
             ))}
           </div>
         )}
-        {earlier.length > 0 && (
+        {sortedEarlier.length > 0 && (
           <div>
-            <div className="font-semibold text-gray-700 px-6 py-2">Earlier</div>
-            {earlier.map(n => (
+            <div className="font-semibold text-gray-700 px-6 py-2">Trước đó</div>
+            {sortedEarlier.map(n => (
               <NotificationItem 
                 key={n.id} 
                 notification={n} 
                 onMarkAsRead={markAsRead}
                 onDelete={deleteNotification}
+                onNotificationClick={handleNotificationClick}
+                setNotifications={setNotifications}
+                fetchNotifications={fetchNotifications}
               />
             ))}
           </div>
@@ -95,24 +134,60 @@ const NotificationPanelWithContext = ({ isOpen, onClose }) => {
   );
 };
 
-function NotificationItem({ notification, onMarkAsRead, onDelete }) {
+function NotificationItem({ notification, onMarkAsRead, onDelete, onNotificationClick, setNotifications, fetchNotifications }) {
   const handleClick = () => {
-    // Đánh dấu đã đọc khi click vào thông báo
     if (onMarkAsRead) {
       onMarkAsRead(notification.id);
     }
   };
 
-  const handleAcceptFriend = (e) => {
+  const handleAcceptFriend = async (e) => {
     e.stopPropagation();
-    // Xử lý chấp nhận lời mời kết bạn
-    console.log('Chấp nhận lời mời kết bạn từ:', notification.originalData?.nguoiGui?.id);
+    const idKetBan = notification.idKetBan || notification.originalData?.idKetBan;
+    if (!idKetBan) {
+      alert("Không tìm thấy id lời mời kết bạn!");
+      return;
+    }
+    try {
+      await axios.post(
+        `http://localhost:8080/network/api/ket-ban/chap-nhan/${idKetBan}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        }
+      );
+      alert("Đã chấp nhận lời mời kết bạn!");
+      // Cập nhật lại UI:
+      if (typeof setNotifications === "function") {
+        setNotifications(prev =>
+          prev.map(n =>
+            n.id === notification.id
+              ? { ...n, isFollowing: true }
+              : n
+          )
+        );
+      } else if (typeof fetchNotifications === "function") {
+        fetchNotifications();
+      }
+    } catch (err) {
+      alert("Chấp nhận lời mời kết bạn thất bại!");
+      console.error(err);
+    }
+    console.log('Chấp nhận lời mời kết bạn từ:', notification.originalData?.idNguoiGui, notification.originalData?.tenNguoiGui);
   };
 
   return (
     <div 
       className={`flex items-center px-6 py-3 hover:bg-gray-50 transition cursor-pointer ${!notification.daDoc ? 'bg-blue-50' : ''}`}
-      onClick={handleClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        handleClick();
+        if (onNotificationClick) {
+          onNotificationClick(notification);
+        }
+      }}
     >
       {/* Avatar hoặc nhóm avatar */}
       <div className="flex-shrink-0 flex -space-x-2">
@@ -120,7 +195,7 @@ function NotificationItem({ notification, onMarkAsRead, onDelete }) {
           notification.users.slice(0, 2).map((u, idx) => (
             <img
               key={u.name}
-              src={u.avatar}
+              src={u.anhDaiDienNguoiGui}
               alt={u.name}
               className="w-9 h-9 rounded-full border-2 border-white z-10"
               style={{ marginLeft: idx === 0 ? 0 : -12 }}
@@ -128,7 +203,7 @@ function NotificationItem({ notification, onMarkAsRead, onDelete }) {
           ))
         ) : (
           <img
-            src={notification.avatar || 'https://via.placeholder.com/40'}
+            src={notification.anhDaiDienNguoiGui || "./anhbandau.jpg"}
             alt="avatar"
             className="w-9 h-9 rounded-full border-2 border-white"
           />
@@ -143,25 +218,34 @@ function NotificationItem({ notification, onMarkAsRead, onDelete }) {
           <BiTime className="mr-1" />
           {notification.time}
         </div>
+        {/* Hiển thị trích đoạn nội dung bài viết nếu có */}
+        {notification.originalData?.noiDungBaiViet && (
+          <div className="text-xs text-gray-600 mt-1 italic truncate">
+            Bài viết: {notification.originalData.noiDungBaiViet.slice(0, 40)}...
+          </div>
+        )}
       </div>
       {/* Nút follow nếu là thông báo friend request */}
-      {notification.type === 'friend_request' && (
+      {notification.type === 'friend_request' && !notification.isFollowing && (
         <button
           onClick={handleAcceptFriend}
-          className={`ml-2 px-3 py-1 rounded font-semibold text-sm transition focus:outline-none ${notification.isFollowing ? 'bg-gray-100 text-gray-700' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+          className={`ml-2 px-3 py-1 rounded font-semibold text-sm transition focus:outline-none bg-blue-500 text-white hover:bg-blue-600`}
         >
-          {notification.isFollowing ? 'Đã chấp nhận' : 'Chấp nhận'}
+          Chấp nhận
         </button>
+      )}
+      {notification.type === 'friend_request' && notification.isFollowing && (
+        <span className="ml-2 px-3 py-1 rounded font-semibold text-sm bg-gray-100 text-gray-700">Đã chấp nhận</span>
       )}
     </div>
   );
 }
 
 // Component chính với fallback
-const NotificationPanel = ({ isOpen, onClose, userId }) => {
+const NotificationPanel = ({ isOpen, onClose, userId, onShowPostModal }) => {
   // Thử render với context, nếu lỗi thì render empty
   try {
-    return <NotificationPanelWithContext isOpen={isOpen} onClose={onClose} />;
+    return <NotificationPanelWithContext isOpen={isOpen} onClose={onClose} onShowPostModal={onShowPostModal} />;
   } catch (error) {
     // Fallback: render panel rỗng
     if (!isOpen) return null;
