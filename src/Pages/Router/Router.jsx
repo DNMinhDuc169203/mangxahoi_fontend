@@ -4,6 +4,7 @@ import HomePage from "../TrangChu/TrangChu";
 import { Route, Routes, useLocation } from "react-router-dom";
 import Profile from "../HoSo/HoSo";
 import { useParams } from "react-router-dom";
+import TinNhan from "../../Components/TinNhan/TinNhan";
 
 import Login from "../DangNhap/DangNhap";
 import Register from "../DangKy/DangKy";
@@ -86,6 +87,7 @@ const Router = () => {
             <Route path="/register" element={<Register />} > </Route>
             <Route path="/verify" element={<Verify />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/messages" element={<TinNhan />} />
           </Routes>
         </div>
       </div>

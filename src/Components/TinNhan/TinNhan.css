@@ -1,0 +1,324 @@
+.messenger-container {
+  display: flex;
+  height: 100vh;
+  background: #fafbfc;
+}
+.messenger-sidebar {
+  width: 350px;
+  border-right: 1px solid #eee;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+}
+.messenger-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 10px;
+  position: relative;
+  margin-top: 40px;
+}
+.messenger-profile-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 5px;
+}
+.messenger-profile-name {
+  font-weight: bold;
+  margin-top: 2px;
+  font-size: 1.1rem;
+}
+.messenger-note {
+  position: absolute;
+  top: 10px;
+  left: 70px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 0.95em;
+  color: #888;
+  box-shadow: 0 2px 8px #0001;
+}
+.messenger-search {
+  padding: 0 20px 10px 20px;
+}
+.messenger-search input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  background: #f5f6fa;
+  font-size: 1em;
+}
+.messenger-tabs {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px 10px 20px;
+  font-size: 1.05em;
+  color: #888;
+  font-weight: 500;
+}
+.messenger-tabs .active {
+  color: #222;
+  font-weight: bold;
+  border-bottom: 2px solid #4267b2;
+  padding-bottom: 2px;
+}
+.messenger-list {
+  flex: 1;
+  overflow-y: auto;
+}
+.messenger-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f3f3;
+  transition: background 0.2s;
+}
+.messenger-item.active, .messenger-item:hover {
+  background: #f0f2f5;
+}
+.messenger-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-right: 15px;
+  object-fit: cover;
+}
+.messenger-name {
+  font-weight: 600;
+}
+.messenger-last {
+  color: #888;
+  font-size: 0.95em;
+}
+.messenger-time {
+  margin-left: auto;
+  color: #bbb;
+  font-size: 0.9em;
+}
+.messenger-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.messenger-empty {
+  text-align: center;
+  color: #888;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.messenger-empty-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-top: 10px;
+}
+.messenger-empty-desc {
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.messenger-btn {
+  margin-top: 15px;
+  padding: 8px 20px;
+  background: red;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.messenger-chat {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #0001;
+}
+.messenger-chat-header {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+.messenger-chat-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+.messenger-message {
+  background: #f0f2f5;
+  color: #222;
+  border-radius: 18px;
+  margin: 6px 0;
+  max-width: 70%;
+  padding: 8px 16px;
+  text-align: left;
+  align-self: flex-start;
+  word-break: break-word;
+}
+.messenger-message.my-message {
+  background: #ff4d4f;
+  color: #fff;
+  text-align: right;
+  align-self: flex-end;
+}
+.messenger-chat-input {
+  display: flex;
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  align-items: center;
+}
+.messenger-chat-input .emoji-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-right: -36px;
+  z-index: 2;
+  color: #888;
+  font-size: 1.4em;
+  cursor: pointer;
+}
+.messenger-chat-input .image-icon {
+  display: flex;
+  align-items: center;
+  margin-left: -32px;
+  margin-right: 12px;
+  z-index: 2;
+  color: #888;
+  font-size: 1.5em;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.messenger-chat-input .image-icon:hover {
+  color: #4267b2;
+}
+.messenger-chat-input .anh {
+  display: flex;
+  align-items: center;
+  margin-left: -42px;
+  margin-right: 12px;
+  z-index: 2;
+  color: #888;
+  font-size: 1.5em;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.messenger-chat-input .anh:hover {
+  color: #4267b2;
+}
+.messenger-chat-input input {
+  flex: 1;
+  padding: 10px 44px 10px 36px;
+  border-radius: 18px;
+  border: 1px solid #ddd;
+  margin-right: 10px;
+}
+.messenger-chat-input button {
+  background: #4267b2;
+  color: #fff;
+  border: none;
+  border-radius: 18px;
+  padding: 8px 20px;
+  cursor: pointer;
+}
+.messenger-main-layout {
+  display: flex;
+  height: 100vh;
+  background: #fafbfc;
+}
+.messenger-sidebar-chat {
+  width: 280px;
+  border-right: 1px solid #eee;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+.messenger-main-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: #fafbfc;
+  min-width: 0;
+  height: 100vh;
+}
+
+.modal-overlay {
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  background: #fff;
+  border-radius: 24px;
+  width: 500px;
+  max-width: 95vw;
+  padding: 0;
+  box-shadow: 0 4px 32px #0002;
+  overflow: hidden;
+}
+.modal-header {
+  padding: 20px 24px 12px 24px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+}
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #888;
+}
+.modal-body {
+  padding: 16px 24px 24px 24px;
+}
+.modal-suggest-list {
+  margin-top: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.modal-suggest-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.modal-suggest-item:hover {
+  background: #f5f5f5;
+}
+.modal-chat-btn {
+  background: red;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
