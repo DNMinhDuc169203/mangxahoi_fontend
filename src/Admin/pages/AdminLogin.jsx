@@ -22,9 +22,16 @@ const AdminLogin = () => {
       if (!res.ok) {
         setError(data.message || 'Đăng nhập thất bại!');
       } else {
-        // Lưu token và thông tin admin nếu cần
+        // Sau khi đăng nhập thành công:
         localStorage.setItem('adminToken', data.token || '');
-        localStorage.setItem('adminInfo', JSON.stringify(data.admin || {}));
+        // Đảm bảo lưu đúng object adminInfo (có id)
+        if (data.nguoiDung) {
+          localStorage.setItem('adminInfo', JSON.stringify(data.nguoiDung));
+        } else if (data.admin) {
+          localStorage.setItem('adminInfo', JSON.stringify(data.admin));
+        } else {
+          localStorage.setItem('adminInfo', '{}');
+        }
         window.location.href = '/admin/dashboard';
       }
     } catch (err) {
