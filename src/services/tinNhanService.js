@@ -78,4 +78,16 @@ export async function getDanhSachCuocTroChuyen() {
     }
   });
   return res.data;
+}
+
+export async function markMessagesAsRead(idCuocTroChuyen, idNguoiDoc) {
+  const token = localStorage.getItem("token");
+  await fetch("http://localhost:8080/network/api/tin-nhan/danh-dau-da-doc", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ idCuocTroChuyen, idNguoiDoc }),
+  });
 } 
