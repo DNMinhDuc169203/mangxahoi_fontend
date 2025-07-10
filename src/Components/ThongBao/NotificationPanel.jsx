@@ -178,6 +178,17 @@ function NotificationItem({ notification, onMarkAsRead, onDelete, onNotification
     console.log('Chấp nhận lời mời kết bạn từ:', notification.originalData?.idNguoiGui, notification.originalData?.tenNguoiGui);
   };
 
+  // Xác định nội dung hiển thị cho từng loại thông báo
+  let message = "";
+  if (notification.loai === "nhan_tin") {
+    message = notification.tieuDe || "Bạn có tin nhắn mới!";
+    // Có thể thêm đoạn trích nội dung tin nhắn nếu muốn
+  } else if (notification.loai === "tuong_tac") {
+    // ... các loại khác ...
+  } else {
+    message = notification.tieuDe || notification.message || "";
+  }
+
   return (
     <div 
       className={`flex items-center px-6 py-3 hover:bg-gray-50 transition cursor-pointer ${!notification.daDoc ? 'bg-blue-50' : ''}`}
@@ -212,7 +223,7 @@ function NotificationItem({ notification, onMarkAsRead, onDelete, onNotification
       {/* Nội dung */}
       <div className="ml-4 flex-1 min-w-0">
         <div className="text-sm text-gray-900">
-          {notification.message}
+          {message}
         </div>
         <div className="flex items-center mt-1 text-xs text-gray-500">
           <BiTime className="mr-1" />

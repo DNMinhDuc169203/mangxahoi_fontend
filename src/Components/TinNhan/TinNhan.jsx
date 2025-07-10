@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import "./TinNhan.css";
 import { BsEmojiSmile } from "react-icons/bs";
 import { BiImageAlt } from "react-icons/bi";
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
 import {
   guiTinNhan,
   timKiemTinNhan,
@@ -57,6 +59,7 @@ const TinNhan = () => {
   const [groupImage, setGroupImage] = useState(null);
   const [groupImagePreview, setGroupImagePreview] = useState(null);
   const [showNguoiDocModal, setShowNguoiDocModal] = useState(null);
+  const stompClientRef = useRef(null);
 
   // Hàm lấy id user hiện tại bằng API
   async function fetchCurrentUserId() {
@@ -142,7 +145,13 @@ const TinNhan = () => {
     const fetchConversations = async () => {
       try {
         const data = await getDanhSachCuocTroChuyen();
-        setConversations(data || []);
+        // Sắp xếp theo thời gian mới nhất (ưu tiên trường time, nếu không có thì dùng tinNhanCuoi hoặc 0)
+        const sorted = [...(data || [])].sort((a, b) => {
+          const timeA = new Date(a.time || a.tinNhanCuoi || 0).getTime();
+          const timeB = new Date(b.time || b.tinNhanCuoi || 0).getTime();
+          return timeB - timeA;
+        });
+        setConversations(sorted);
         setSelectedId(null);
       } catch (err) {
         setConversations([]);
@@ -151,6 +160,79 @@ const TinNhan = () => {
     };
     fetchConversations();
   }, []);
+
+  // WebSocket real-time chat effect
+  useEffect(() => {
+    const socket = new SockJS("http://localhost:8080/network/ws/chat");
+    const stompClient = new Client({
+      webSocketFactory: () => socket,
+      reconnectDelay: 5000,
+      onConnect: () => {
+        stompClient.subscribe("/topic/tin-nhan", (message) => {
+          const msg = JSON.parse(message.body);
+          // Luôn cập nhật conversations (đẩy lên đầu)
+          setConversations(prev => {
+            const idx = prev.findIndex(
+              c => (c.idCuocTroChuyen || c.id) === msg.idCuocTroChuyen
+            );
+            if (idx === -1) return prev;
+            const isMe = msg.idNguoiGui === userInfo.id;
+            let unreadCount = prev[idx].unreadCount || 0;
+            // Nếu là tin nhắn đến từ người khác và không phải đang mở, tăng unreadCount
+            if (!isMe && (msg.idCuocTroChuyen !== selectedId)) {
+              unreadCount += 1;
+            }
+            const updatedConv = {
+              ...prev[idx],
+              lastMessage: msg.noiDung || (msg.loaiTinNhan === "hinh_anh" ? "[Hình ảnh]" : msg.loaiTinNhan === "video" ? "[Video]" : ""),
+              time: formatTimeAgo(msg.ngayTao),
+              lastMessageContent: msg.noiDung,
+              lastMessageType: msg.loaiTinNhan,
+              lastMessageSenderId: msg.idNguoiGui,
+              lastMessageSenderName: msg.tenNguoiGui,
+              lastMessageTime: msg.ngayTao,
+              unreadCount,
+            };
+            const newList = [updatedConv, ...prev.filter((_, i) => i !== idx)];
+            return newList;
+          });
+          // Chỉ cập nhật messages nếu đang mở đúng cuộc trò chuyện
+          if (msg.idCuocTroChuyen === selectedId) {
+            setMessages((prev) => {
+              if (prev.some(m => m.idTinNhan === msg.idTinNhan)) return prev;
+              return [...prev, msg];
+            });
+            // Gọi API đánh dấu đã đọc nếu là chat cá nhân
+            const selectedConv = conversations.find(c => (c.idCuocTroChuyen || c.id) === selectedId);
+            const isGroup = selectedConv?.loai === "nhom";
+            if (!isGroup) {
+              markMessagesAsRead(selectedId);
+            } else {
+              markGroupMessagesAsRead(selectedId);
+            }
+          }
+        });
+      },
+    });
+    stompClient.activate();
+    stompClientRef.current = stompClient;
+    return () => {
+      stompClient.deactivate();
+    };
+  }, [selectedId, userInfo.id, conversations]); // Thêm conversations vào phụ thuộc
+
+  // Reset unreadCount về 0 khi mở cuộc trò chuyện
+  useEffect(() => {
+    if (selectedId) {
+      setConversations(prev =>
+        prev.map(conv =>
+          (conv.idCuocTroChuyen || conv.id) === selectedId
+            ? { ...conv, unreadCount: 0 }
+            : conv
+        )
+      );
+    }
+  }, [selectedId]);
 
   // Xử lý gửi tin nhắn
   const handleSend = async () => {
@@ -165,32 +247,45 @@ const TinNhan = () => {
       }
       let loaiTinNhan = "van_ban";
       if (file) {
-        console.log("file.type:", file.type);
         if (file.type.startsWith("image/")) loaiTinNhan = "hinh_anh";
         else if (file.type.startsWith("video/")) loaiTinNhan = "video";
-        // Nếu muốn hỗ trợ loại khác, cần thêm vào enum backend!
       }
-      console.log("Gửi tin nhắn với loaiTinNhan:", loaiTinNhan);
-      await guiTinNhan({
+      const msg = {
         idCuocTroChuyen: selectedId,
+        idNguoiGui: userInfo.id,
         noiDung: messageInput,
         loaiTinNhan,
         urlTepTin: urlTepTin,
-      });
+      };
+      if (stompClientRef.current && stompClientRef.current.connected) {
+        stompClientRef.current.publish({
+          destination: "/app/chat/gui",
+          body: JSON.stringify(msg),
+        });
+      } else {
+        await guiTinNhan(msg);
+        // Nếu gửi qua API, tự cập nhật conversations
+        setConversations(prev => {
+          const idx = prev.findIndex(
+            c => (c.idCuocTroChuyen || c.id) === selectedId
+          );
+          if (idx === -1) return prev;
+          const updatedConv = {
+            ...prev[idx],
+            lastMessage: msg.noiDung || (msg.loaiTinNhan === "hinh_anh" ? "[Hình ảnh]" : msg.loaiTinNhan === "video" ? "[Video]" : ""),
+            time: formatTimeAgo(new Date())
+          };
+          const newList = [updatedConv, ...prev.filter((_, i) => i !== idx)];
+          return newList;
+        });
+      }
       setMessageInput("");
       setFile(null);
-      // Reload messages
-      const data = await timKiemTinNhan({
-        idCuocTroChuyen: selectedId,
-        tuKhoa: "",
-        trang: 0,
-        kichThuoc: 50,
-      });
-      setMessages(data);
+      setSending(false);
     } catch (err) {
       setError("Gửi tin nhắn thất bại");
+      setSending(false);
     }
-    setSending(false);
   };
 
   // Xử lý chọn file
@@ -306,10 +401,27 @@ const TinNhan = () => {
         <div className="messenger-list">
           {conversations.map((conv) => {
             const isGroupItem = conv.loai === "nhom";
+            // Lấy nội dung tin nhắn cuối cùng từ backend
+            let lastMsg = "";
+            if (conv.lastMessageType === "hinh_anh") lastMsg = "[Hình ảnh]";
+            else if (conv.lastMessageType === "video") lastMsg = "[Video]";
+            else lastMsg = conv.lastMessageContent || "";
+            // Hiển thị tên người gửi nếu là nhóm
+            let lastMsgSender = "";
+            if (isGroupItem && conv.lastMessageSenderName) {
+              lastMsgSender = conv.lastMessageSenderName + ": ";
+            }
+            // Hiển thị thời gian tin nhắn cuối
+            let lastMsgTime = "";
+            if (conv.lastMessageTime) {
+              lastMsgTime = formatTimeAgo(conv.lastMessageTime);
+            }
+            // Xác định có tin nhắn chưa đọc không
+            const isUnread = conv.unreadCount > 0;
             return (
               <div
                 key={conv.idCuocTroChuyen || conv.id}
-                className={`messenger-item ${selectedId === (conv.idCuocTroChuyen || conv.id) ? "active" : ""}`}
+                className={`messenger-item${selectedId === (conv.idCuocTroChuyen || conv.id) ? " active" : ""}${isUnread ? " unread" : ""}`}
                 onClick={() => setSelectedId(conv.idCuocTroChuyen || conv.id)}
               >
                 <img
@@ -318,10 +430,13 @@ const TinNhan = () => {
                   className="messenger-avatar"
                 />
                 <div>
-                  <div className="messenger-name">{isGroupItem ? conv.tenNhom : conv.tenDoiPhuong || "Người dùng"}</div>
-                  <div className="messenger-last">{conv.lastMessage}</div>
+                  <div className="messenger-name" style={isUnread ? {fontWeight: 'bold', color: '#1877f2'} : {}}>{isGroupItem ? conv.tenNhom : conv.tenDoiPhuong || "Người dùng"}</div>
+                  <div className="messenger-last">{lastMsgSender}{lastMsg}</div>
                 </div>
-                <div className="messenger-time">{conv.time}</div>
+                <div className="messenger-time">
+                  {lastMsgTime}
+                  {isUnread && <span className="unread-dot"> ●</span>}
+                </div>
               </div>
             );
           })}
