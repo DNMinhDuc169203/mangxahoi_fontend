@@ -8,7 +8,8 @@ import {
   taoCuocTroChuyen,
   uploadTinNhanFile,
   getDanhSachCuocTroChuyen,
-  markMessagesAsRead
+  markMessagesAsRead,
+  markGroupMessagesAsRead
 } from "../../services/tinNhanService";
 import axios from "axios";
 
@@ -55,6 +56,7 @@ const TinNhan = () => {
   const [groupName, setGroupName] = useState("");
   const [groupImage, setGroupImage] = useState(null);
   const [groupImagePreview, setGroupImagePreview] = useState(null);
+  const [showNguoiDocModal, setShowNguoiDocModal] = useState(null);
 
   // Hàm lấy id user hiện tại bằng API
   async function fetchCurrentUserId() {
@@ -273,9 +275,13 @@ const TinNhan = () => {
 
   useEffect(() => {
     if (selectedId && userInfo.id) {
-      markMessagesAsRead(selectedId, userInfo.id);
+      if (isGroup) {
+        markGroupMessagesAsRead(selectedId);
+      } else {
+        markMessagesAsRead(selectedId);
+      }
     }
-  }, [selectedId, userInfo.id]);
+  }, [selectedId, userInfo.id, isGroup]);
 
   return (
     <div className="messenger-main-layout">
@@ -371,64 +377,117 @@ const TinNhan = () => {
                       showTime = true;
                     }
                   }
+                  // Xác định tin nhắn cuối cùng của mình đã được đọc
+                  let isLastReadMyMsg = false;
+                  if (isMe && isGroup && msg.danhSachNguoiDoc && msg.danhSachNguoiDoc.length > 0) {
+                    isLastReadMyMsg = messages.slice(idx + 1).findIndex(
+                      m => m.idNguoiGui === userInfo.id && m.danhSachNguoiDoc && m.danhSachNguoiDoc.length > 0
+                    ) === -1;
+                  } else if (isMe && !isGroup && msg.daDoc) {
+                    isLastReadMyMsg = messages.slice(idx + 1).findIndex(m => m.idNguoiGui === userInfo.id && m.daDoc) === -1;
+                  }
+
+                  // Giả sử bạn có danh sách thành viên nhóm: groupMemberIds
+                  // Và userInfo.id là id của mình
+
+                  // Tìm id các thành viên khác mình
+                  const groupMemberIds = selectedConv?.thanhVien || [];
+                  const otherMemberIds = groupMemberIds.filter(id => id !== userInfo.id);
+
+                  // Tìm index tin nhắn cuối cùng đã được tất cả otherMemberIds xem
+                  let lastReadMsgIdx = -1;
+                  messages.forEach((msg, idx) => {
+                    if (
+                      msg.danhSachNguoiDoc &&
+                      otherMemberIds.every(id => msg.danhSachNguoiDoc.some(u => u.id === id))
+                    ) {
+                      lastReadMsgIdx = idx;
+                    }
+                  });
+
+                  // Khi render từng tin nhắn:
+                  const showGroupSeen = isGroup && idx === lastReadMsgIdx && msg.danhSachNguoiDoc && msg.danhSachNguoiDoc.length > 0;
+
                   return (
                     <div
                       key={msg.idTinNhan}
-                      className={`messenger-message${isMe ? " my-message" : ""}`}
-                      style={{ display: "flex", alignItems: "flex-end", gap: 8, position: "relative" }}
+                      className={`message-row${isMe ? " me" : ""}`}
                     >
-                      {/* Avatar bên trái nếu không phải mình */}
+                      {/* Avatar chỉ hiện với người khác */}
                       {!isMe && (
                         <img
                           src={senderAvatar}
                           alt={senderName}
-                          style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", marginRight: 6 }}
+                          className="message-avatar"
                         />
                       )}
-                      <div style={{ position: "relative" }}>
-                        {/* Nếu là nhóm, hiện tên người gửi */}
+                      <div>
+                        {/* Tên người gửi (nếu là nhóm và không phải mình) */}
                         {isGroup && !isMe && (
                           <div style={{ fontWeight: 500, fontSize: 13, color: "#4267b2", marginBottom: 2 }}>
                             {senderName}
                           </div>
                         )}
-                        {/* Nội dung tin nhắn */}
-                        {msg.loaiTinNhan === "hinh_anh" && msg.urlTepTin ? (
-                          <img src={msg.urlTepTin} alt="img" style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, display: "block", marginBottom: 4 }} />
-                        ) : null}
-                        {msg.loaiTinNhan === "video" && msg.urlTepTin ? (
-                          <video src={msg.urlTepTin} controls style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, display: "block", marginBottom: 4 }} />
-                        ) : null}
-                        {msg.noiDung}
-                        {/* Thời gian dưới tin nhắn */}
+                        <div className={`message-bubble${isMe ? " my-bubble" : " other-bubble"}`}>
+                          {/* Nội dung tin nhắn (ảnh/video/...) */}
+                          {msg.loaiTinNhan === "hinh_anh" && msg.urlTepTin ? (
+                            <img src={msg.urlTepTin} alt="img" style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, display: "block", marginBottom: 4 }} />
+                          ) : null}
+                          {msg.loaiTinNhan === "video" && msg.urlTepTin ? (
+                            <video src={msg.urlTepTin} controls style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, display: "block", marginBottom: 4 }} />
+                          ) : null}
+                          {msg.noiDung}
+                        </div>
+                        {/* Thời gian gửi */}
                         {showTime && (
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: "black",
-                              marginTop: 4,
-                              textAlign: isMe ? "right" : "left",
-                              minWidth: 80
-                            }}
-                          >
+                          <div className="message-time">
                             {formatTimeAgo(msg.ngayTao)}
                           </div>
                         )}
-                        {/* Nếu là tin nhắn cuối cùng của mình và đã được đọc */}
-                        {isMe && showTime && (
-                          <div style={{ fontSize: 11, color: msg.daDoc ? "#4caf50" : "#888", textAlign: "right" }}>
-                            {msg.daDoc ? "Đã xem" : "Đã gửi"}
+                        {/* Đã xem cá nhân */}
+                        {isLastReadMyMsg && !isGroup && (
+                          <div style={{
+                            fontSize: 12,
+                            color: "#888",
+                            marginTop: 2,
+                            marginLeft: isMe ? 0 : 44,
+                            marginRight: isMe ? 44 : 0,
+                            textAlign: isMe ? "right" : "left"
+                          }}>
+                            Đã xem
+                          </div>
+                        )}
+                        {/* Đã xem nhóm */}
+                        {showGroupSeen && (
+                          <div
+                            className="seen-by-group"
+                            style={{
+                              cursor: "pointer",
+                              color: "#888",
+                              marginTop: 2,
+                              marginBottom: 4,
+                              background: "transparent",
+                              fontSize: 13,
+                              paddingLeft: 8,
+                              paddingRight: 8,
+                              whiteSpace: "nowrap",
+                              alignSelf: isMe ? "flex-end" : "flex-start"
+                            }}
+                            onClick={() => setShowNguoiDocModal(msg.danhSachNguoiDoc)}
+                            title="Xem danh sách người đã xem"
+                          >
+                            👁️ Đã xem ({msg.danhSachNguoiDoc.length})
                           </div>
                         )}
                       </div>
-                      {/* Avatar bên phải nếu là mình */}
-                      {isMe && (
+                      {/* Avatar của mình (nếu muốn, có thể bỏ) */}
+                      {/* isMe && (
                         <img
                           src={userInfo.anhDaiDien}
                           alt={userInfo.hoTen}
-                          style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", marginLeft: 6 }}
+                          className="message-avatar"
                         />
-                      )}
+                      ) */}
                     </div>
                   );
                 })
@@ -550,6 +609,24 @@ const TinNhan = () => {
                   {creatingChat ? "Đang tạo..." : "Chat"}
                 </button>
                 {error && <div style={{ color: "red", marginTop: 10 }}>{error}</div>}
+              </div>
+            </div>
+          </div>
+        )}
+        {showNguoiDocModal && (
+          <div className="modal-overlay" onClick={() => setShowNguoiDocModal(null)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <span>Danh sách người đã xem</span>
+                <button className="modal-close" onClick={() => setShowNguoiDocModal(null)}>×</button>
+              </div>
+              <div className="modal-body">
+                {showNguoiDocModal.map(user => (
+                  <div key={user.id} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                    <img src={user.anhDaiDien || "./anhbandau.jpg"} alt={user.hoTen} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", marginRight: 8 }} />
+                    <span>{user.hoTen}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
