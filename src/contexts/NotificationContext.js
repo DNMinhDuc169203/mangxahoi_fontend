@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useNotificationCount } from '../hooks/useNotificationCount';
+import { useNotificationSocket } from '../hooks/useNotificationSocket';
 
 const NotificationContext = createContext();
 
@@ -43,11 +44,11 @@ export const NotificationProvider = ({ children, userId }) => {
     markAsRead: (id) => {
       notificationData.markAsRead(id);
       countData.markAsRead(id);
+      countData.refreshCount(); // Gọi lại API lấy số lượng chưa đọc từ backend
     },
-    deleteNotification: notificationData.deleteNotification,
-    addNotification: (notification) => {
-      notificationData.addNotification(notification);
-      countData.addNewNotification();
+    deleteNotification: (id) => {
+      notificationData.deleteNotification(id);
+      countData.refreshCount();
     },
     refreshNotifications: notificationData.fetchNotifications,
     refreshCount: countData.refreshCount,
@@ -58,18 +59,11 @@ export const NotificationProvider = ({ children, userId }) => {
     togglePanel: () => setIsPanelOpen(!isPanelOpen)
   };
 
-  // Real-time updates (có thể sử dụng WebSocket sau này)
-  useEffect(() => {
-    if (!userId) return;
-
-    // Polling để cập nhật thông báo mới
-    const interval = setInterval(() => {
-      notificationData.fetchNotifications();
-      countData.refreshCount();
-    }, 30000); // 30 giây
-
-    return () => clearInterval(interval);
-  }, [userId, notificationData.fetchNotifications, countData.refreshCount]);
+  // Real-time updates (WebSocket)
+  useNotificationSocket(userId, (notification) => {
+    notificationData.addNotification(notification);
+    countData.addNewNotification();
+  });
 
   return (
     <NotificationContext.Provider value={contextValue}>

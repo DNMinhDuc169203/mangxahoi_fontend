@@ -11,7 +11,9 @@ import {
   uploadTinNhanFile,
   getDanhSachCuocTroChuyen,
   markMessagesAsRead,
-  markGroupMessagesAsRead
+  markGroupMessagesAsRead,
+  thuHoiTinNhan,
+  themThanhVien // <-- thêm import
 } from "../../services/tinNhanService";
 import axios from "axios";
 
@@ -60,6 +62,45 @@ const TinNhan = () => {
   const [groupImagePreview, setGroupImagePreview] = useState(null);
   const [showNguoiDocModal, setShowNguoiDocModal] = useState(null);
   const stompClientRef = useRef(null);
+  const chatBodyRef = useRef(null);
+  const [showHeaderModal, setShowHeaderModal] = useState(false);
+  const headerModalRef = useRef();
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showSearchMessageModal, setShowSearchMessageModal] = useState(false);
+  const [hoveredMsgId, setHoveredMsgId] = useState(null); // Tin nhắn đang hover
+  const [showRecallMenuMsgId, setShowRecallMenuMsgId] = useState(null); // Tin nhắn đang mở menu thu hồi
+  const recallMenuRef = useRef();
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [addMemberFriends, setAddMemberFriends] = useState([]); // bạn bè chưa thuộc nhóm
+  const [selectedAddMemberIds, setSelectedAddMemberIds] = useState([]);
+  const [addingMembers, setAddingMembers] = useState(false);
+  const [addMemberError, setAddMemberError] = useState("");
+  const [showMemberListModal, setShowMemberListModal] = useState(false);
+
+  // Đóng modal khi click ra ngoài
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (showHeaderModal && headerModalRef.current && !headerModalRef.current.contains(event.target)) {
+        setShowHeaderModal(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showHeaderModal]);
+
+  // Đóng menu thu hồi khi click ra ngoài
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (showRecallMenuMsgId && recallMenuRef.current && !recallMenuRef.current.contains(event.target)) {
+        setShowRecallMenuMsgId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showRecallMenuMsgId]);
 
   // Hàm lấy id user hiện tại bằng API
   async function fetchCurrentUserId() {
@@ -378,6 +419,72 @@ const TinNhan = () => {
     }
   }, [selectedId, userInfo.id, isGroup]);
 
+  // Scroll xuống cuối khi messages thay đổi hoặc khi chọn cuộc trò chuyện
+  useEffect(() => {
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+    }
+  }, [messages, selectedId]);
+
+  // Tính tổng số tin nhắn chưa đọc
+  const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
+
+  useEffect(() => {
+    localStorage.setItem('conversations', JSON.stringify(conversations));
+  }, [conversations]);
+
+  const handleSearchMessages = async () => {
+    setSearching(true);
+    setSearchError("");
+    try {
+      const data = await timKiemTinNhan({
+        idCuocTroChuyen: selectedId,
+        tuKhoa: searchKeyword,
+        trang: 0,
+        kichThuoc: 10,
+      });
+      setSearchResults(data);
+    } catch (err) {
+      setSearchError("Không tìm thấy tin nhắn hoặc có lỗi xảy ra.");
+      setSearchResults([]);
+    }
+    setSearching(false);
+  };
+
+  // Khi mở modal thêm thành viên, lấy danh sách bạn bè chưa thuộc nhóm
+  useEffect(() => {
+    if (!showAddMemberModal || !selectedConv) return;
+    const fetchFriends = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:8080/network/api/ket-ban/danh-sach/ban-be", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const allFriends = Array.isArray(res.data.content) ? res.data.content : [];
+        // Log để debug
+        console.log("Danh sách thành viên nhóm:", selectedConv.thanhVien);
+        console.log("Danh sách bạn bè:", allFriends.map(f => f.id));
+        // Lọc ra bạn bè chưa thuộc nhóm (không hiển thị bạn bè đã là thành viên nhóm)
+        const groupMembers = Array.isArray(selectedConv.thanhVien)
+          ? selectedConv.thanhVien
+          : (Array.isArray(selectedConv.idThanhVien) ? selectedConv.idThanhVien : []);
+        const groupMemberIds = groupMembers.map(id => String(id));
+        const notInGroup = allFriends.filter(f => !groupMemberIds.includes(String(f.id)));
+        setAddMemberFriends(notInGroup);
+      } catch (err) {
+        setAddMemberFriends([]);
+      }
+      setSelectedAddMemberIds([]);
+      setAddMemberError("");
+    };
+    fetchFriends();
+  }, [showAddMemberModal, selectedConv]);
+
+  // Hàm xử lý chọn bạn bè để thêm
+  const handleToggleAddMember = (id) => {
+    setSelectedAddMemberIds(prev => prev.includes(id) ? prev.filter(fid => fid !== id) : [...prev, id]);
+  };
+
   return (
     <div className="messenger-main-layout">
       {/* Sidebar chat (danh sách chat) */}
@@ -395,7 +502,30 @@ const TinNhan = () => {
           <input type="text" placeholder="Search" />
         </div>
         <div className="messenger-tabs">
-          <span className="active">Messages</span>
+          <span className="active" style={{position: 'relative', display: 'inline-block'}}>
+            Messages
+            {totalUnread > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: -8,
+                right: -18,
+                background: 'red',
+                color: '#fff',
+                borderRadius: '50%',
+                fontSize: 12,
+                minWidth: 18,
+                height: 18,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 5px',
+                fontWeight: 600,
+                zIndex: 1
+              }}>
+                {totalUnread > 99 ? '99+' : totalUnread}
+              </span>
+            )}
+          </span>
           <span>Requests</span>
         </div>
         <div className="messenger-list">
@@ -463,8 +593,22 @@ const TinNhan = () => {
               <span>
                 {isGroup ? selectedConv?.tenNhom : selectedConv?.tenDoiPhuong || ""}
               </span>
+              <button className="messenger-header-btn" onClick={() => setShowHeaderModal(true)}>...</button>
+              {showHeaderModal && (
+                <div className="messenger-header-modal" ref={headerModalRef}>
+                  {isGroup ? (
+                    <>
+                      <button onClick={() => { setShowHeaderModal(false); setShowMemberListModal(true); }}>Danh sách thành viên</button>
+                      <button onClick={() => { setShowHeaderModal(false); setShowAddMemberModal(true); }}>Thêm Thành viên</button>
+                      <button onClick={() => { setShowHeaderModal(false); setShowSearchMessageModal(true); }}>Tìm kiếm tin nhắn</button>
+                    </>
+                  ) : (
+                    <button onClick={() => { setShowHeaderModal(false); setShowSearchMessageModal(true); }}>Tìm kiếm tin nhắn</button>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="messenger-chat-body">
+            <div className="messenger-chat-body" ref={chatBodyRef}>
               {error && <div style={{ color: "red" }}>{error}</div>}
               {messages.length === 0 ? (
                 <div className="messenger-message">Chưa có tin nhắn</div>
@@ -527,6 +671,9 @@ const TinNhan = () => {
                     <div
                       key={msg.idTinNhan}
                       className={`message-row${isMe ? " me" : ""}`}
+                      onMouseEnter={() => isMe && setHoveredMsgId(msg.idTinNhan)}
+                      onMouseLeave={() => isMe && setHoveredMsgId(null)}
+                      style={{ position: 'relative' }}
                     >
                       {/* Avatar chỉ hiện với người khác */}
                       {!isMe && (
@@ -551,7 +698,83 @@ const TinNhan = () => {
                           {msg.loaiTinNhan === "video" && msg.urlTepTin ? (
                             <video src={msg.urlTepTin} controls style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8, display: "block", marginBottom: 4 }} />
                           ) : null}
-                          {msg.noiDung}
+                          {msg.loaiTinNhan === "thu_hoi" ? (
+                            <span style={{ fontStyle: 'italic', color: '#888' }}>{msg.noiDung || 'Tin nhắn đã được thu hồi'}</span>
+                          ) : (
+                            msg.noiDung
+                          )}
+                          {/* Nút ba chấm dọc khi hover vào tin nhắn của mình */}
+                          {isMe && hoveredMsgId === msg.idTinNhan && (
+                            <span
+                              className="recall-dot-menu-btn"
+                              style={{
+                                position: 'absolute',
+                                top: 6,
+                                right: isMe ? 0 : undefined,
+                                left: isMe ? undefined : 0,
+                                cursor: 'pointer',
+                                background: 'transparent',
+                                border: 'none',
+                                fontSize: 20,
+                                zIndex: 2
+                              }}
+                              onClick={e => {
+                                e.stopPropagation();
+                                setShowRecallMenuMsgId(msg.idTinNhan);
+                              }}
+                              title="Tùy chọn tin nhắn"
+                            >
+                              <span style={{ display: 'inline-block', transform: 'rotate(90deg)' }}>⋮</span>
+                            </span>
+                          )}
+                          {/* Menu thu hồi tin nhắn */}
+                          {isMe && showRecallMenuMsgId === msg.idTinNhan && (
+                            <div
+                              ref={recallMenuRef}
+                              className="recall-menu"
+                              style={{
+                                position: 'absolute',
+                                top: 28,
+                                right: isMe ? 0 : undefined,
+                                left: isMe ? undefined : 0,
+                                background: '#fff',
+                                border: '1px solid #ccc',
+                                borderRadius: 6,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                                zIndex: 10,
+                                minWidth: 120,
+                                padding: '4px 0',
+                              }}
+                            >
+                              <button
+                                style={{
+                                  width: '100%',
+                                  background: 'none',
+                                  color: 'black',
+                                  border: 'none',
+                                  padding: '8px 12px',
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                  fontSize: 13
+                                }}
+                                onClick={async () => {
+                                  setShowRecallMenuMsgId(null);
+                                  try {
+                                    await thuHoiTinNhan({ idTinNhan: msg.idTinNhan });
+                                    setMessages(prevMsgs => prevMsgs.map(m =>
+                                      m.idTinNhan === msg.idTinNhan
+                                        ? { ...m, noiDung: 'Tin nhắn đã được thu hồi', loaiTinNhan: 'thu_hoi', urlTepTin: null }
+                                        : m
+                                    ));
+                                  } catch (err) {
+                                    alert('Thu hồi tin nhắn thất bại!');
+                                  }
+                                }}
+                              >
+                                Thu hồi tin nhắn
+                              </button>
+                            </div>
+                          )}
                         </div>
                         {/* Thời gian gửi */}
                         {showTime && (
@@ -743,6 +966,134 @@ const TinNhan = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+        {showAddMemberModal && (
+          <div className="messenger-modal-overlay" onClick={() => setShowAddMemberModal(false)}>
+            <div className="messenger-modal-content" onClick={e => e.stopPropagation()}>
+              <h3>Thành viên nhóm</h3>
+              {/* Danh sách thành viên hiện tại */}
+              <ul style={{maxHeight: '120px', overflowY: 'auto', marginBottom: 8}}>
+                {(selectedConv?.danhSachThanhVien || []).map((member, idx) => (
+                  <li key={member.id} style={{display: 'flex', alignItems: 'center', marginBottom: 4}}>
+                    <img
+                      src={member.anhDaiDien || "./anhbandau.jpg"}
+                      alt={member.hoTen}
+                      style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", marginRight: 8 }}
+                    />
+                    <span>
+                      {member.hoTen}
+                      {member.id === selectedConv.idTruongNhom && (
+                        <span style={{ color: '#1877f2', fontWeight: 600, marginLeft: 6 }} title="Trưởng nhóm">
+                          👑
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <hr />
+              <h4>Thêm thành viên mới</h4>
+              <div style={{maxHeight: '180px', overflowY: 'auto', marginBottom: 8}}>
+                {addMemberFriends.length === 0 && <div style={{color:'#888'}}>Không còn bạn bè nào để thêm.</div>}
+                {addMemberFriends.map(friend => (
+                  <div key={friend.id} style={{display: 'flex', alignItems: 'center', padding: '4px 0'}}>
+                    <img src={friend.avatar || friend.anhDaiDien || "./anhbandau.jpg"} alt={friend.name || friend.hoTen} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", marginRight: 8 }} />
+                    <span>{friend.name || friend.hoTen}</span>
+                    <input
+                      type="checkbox"
+                      checked={selectedAddMemberIds.includes(friend.id)}
+                      onChange={() => handleToggleAddMember(friend.id)}
+                      style={{ marginLeft: "auto" }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <button
+                style={{ width: '100%', marginTop: 8 }}
+                onClick={async () => {
+                  setAddingMembers(true);
+                  setAddMemberError("");
+                  try {
+                    await themThanhVien({
+                      idCuocTroChuyen: selectedConv.idCuocTroChuyen || selectedConv.id,
+                      idThanhVienMoi: selectedAddMemberIds,
+                      idNguoiThucHien: userInfo.id
+                    });
+                    setShowAddMemberModal(false);
+                    setSelectedAddMemberIds([]);
+                    // Có thể reload lại nhóm hoặc cập nhật UI ở đây nếu muốn
+                  } catch (err) {
+                    setAddMemberError("Thêm thành viên thất bại!");
+                  }
+                  setAddingMembers(false);
+                }}
+                disabled={addingMembers || selectedAddMemberIds.length === 0}
+              >
+                {addingMembers ? "Đang thêm..." : "Thêm"}
+              </button>
+              {addMemberError && <div style={{ color: "red", marginTop: 8 }}>{addMemberError}</div>}
+              <button style={{ width: '100%', marginTop: 8 }} onClick={() => setShowAddMemberModal(false)}>Đóng</button>
+            </div>
+          </div>
+        )}
+        {showSearchMessageModal && (
+          <div className="messenger-modal-overlay" onClick={() => setShowSearchMessageModal(false)}>
+            <div className="messenger-modal-content" onClick={e => e.stopPropagation()}>
+              <h3>Tìm kiếm tin nhắn</h3>
+              <input
+                type="text"
+                placeholder="Nhập từ khóa..."
+                style={{ width: '100%', marginBottom: 8 }}
+                value={searchKeyword}
+                onChange={e => setSearchKeyword(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSearchMessages(); }}
+              />
+              <button style={{ width: '100%' }} onClick={handleSearchMessages} disabled={searching}>
+                {searching ? "Đang tìm..." : "Tìm kiếm"}
+              </button>
+              {searchError && <div style={{ color: "red", marginTop: 8 }}>{searchError}</div>}
+              <div style={{ maxHeight: 200, overflowY: 'auto', marginTop: 8 }}>
+                {searchResults && searchResults.length > 0 ? (
+                  searchResults.map(msg => (
+                    <div key={msg.idTinNhan} style={{ padding: 6, borderBottom: '1px solid #eee', fontSize: 14 }}>
+                      <b>{msg.tenNguoiGui || "Bạn"}:</b> {msg.noiDung}
+                      <div style={{ fontSize: 12, color: '#888' }}>{formatTimeAgo(msg.ngayTao)}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ color: '#888', fontStyle: 'italic' }}>Không có kết quả.</div>
+                )}
+              </div>
+              <button style={{ width: '100%', marginTop: 8 }} onClick={() => setShowSearchMessageModal(false)}>Đóng</button>
+            </div>
+          </div>
+        )}
+        {showMemberListModal && (
+          <div className="messenger-modal-overlay" onClick={() => setShowMemberListModal(false)}>
+            <div className="messenger-modal-content" onClick={e => e.stopPropagation()}>
+              <h3>Danh sách thành viên nhóm</h3>
+              <ul style={{maxHeight: '240px', overflowY: 'auto', marginBottom: 8}}>
+                {(selectedConv?.danhSachThanhVien || []).map((member, idx) => (
+                  <li key={member.id} style={{display: 'flex', alignItems: 'center', marginBottom: 4}}>
+                    <img
+                      src={member.anhDaiDien || "./anhbandau.jpg"}
+                      alt={member.hoTen}
+                      style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", marginRight: 8 }}
+                    />
+                    <span>
+                      {member.hoTen}
+                      {member.id === selectedConv.idTruongNhom && (
+                        <span style={{ color: '#1877f2', fontWeight: 600, marginLeft: 6 }} title="Trưởng nhóm">
+                          👑
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <button style={{ width: '100%', marginTop: 8 }} onClick={() => setShowMemberListModal(false)}>Đóng</button>
             </div>
           </div>
         )}

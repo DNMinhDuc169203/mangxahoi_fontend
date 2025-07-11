@@ -191,7 +191,7 @@ function NotificationItem({ notification, onMarkAsRead, onDelete, onNotification
 
   return (
     <div 
-      className={`flex items-center px-6 py-3 hover:bg-gray-50 transition cursor-pointer ${!notification.daDoc ? 'bg-blue-50' : ''}`}
+      className={`flex items-center px-6 py-3 hover:bg-gray-50 transition cursor-pointer ${(notification.daDoc === false || notification.daDoc === 'false') ? 'bg-blue-50' : ''}`}
       onClick={(e) => {
         e.stopPropagation();
         handleClick();

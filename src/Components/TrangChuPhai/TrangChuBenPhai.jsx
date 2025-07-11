@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import SuggetionCard from "./SuggetionCard";
-import axios from 'axios';
+import axios from "axios";
 
 const HomeRight = () => {
   const [user, setUser] = useState(null);
@@ -9,11 +9,14 @@ const HomeRight = () => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
       try {
-        const res = await axios.get("http://localhost:8080/network/api/nguoi-dung/thong-tin-hien-tai", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await axios.get(
+          "http://localhost:8080/network/api/nguoi-dung/thong-tin-hien-tai",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         setUser(res.data);
       } catch (err) {
         setUser(null);
@@ -39,7 +42,23 @@ const HomeRight = () => {
             </div>
           </div>
           <div>
-            <p className="text-blue-700">swith</p>
+            <p className="text-blue-700">chuyển đổi</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between mb-2 mt-10 ">
+          <div>
+            <div >Đề xuất cho bạn</div>
+          </div>
+          <div
+            style={{
+              minWidth: 100,
+              textAlign: "right",
+             
+              fontWeight  : 500,
+              cursor: "pointer",
+            }}  
+          >
+            tất cả
           </div>
         </div>
         <div className="space-y-5 mt-10">

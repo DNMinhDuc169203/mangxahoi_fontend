@@ -81,7 +81,8 @@ export const useNotifications = (userId) => {
       group,
       users,
       isFollowing,
-      originalData: apiNotification
+      originalData: apiNotification,
+      daDoc: apiNotification.daDoc // BỔ SUNG DÒNG NÀY
     };
   };
 

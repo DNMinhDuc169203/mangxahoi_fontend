@@ -7,7 +7,6 @@ export const useNotificationCount = (userId) => {
 
   const fetchUnreadCount = async () => {
     if (!userId) return;
-    
     setLoading(true);
     try {
       const notifications = await notificationService.getNotifications(userId);
@@ -23,11 +22,8 @@ export const useNotificationCount = (userId) => {
 
   useEffect(() => {
     fetchUnreadCount();
-    
-    // Có thể thêm polling để cập nhật real-time
-    const interval = setInterval(fetchUnreadCount, 30000); // Cập nh  ật mỗi 30 giây
-    
-    return () => clearInterval(interval);
+    // Không còn polling 30 giây nữa, chỉ fetch khi mount hoặc userId đổi
+    return () => {};
   }, [userId]);
 
   const markAsRead = (notificationId) => {

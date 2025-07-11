@@ -8,6 +8,19 @@ import NotificationPanel from "../ThongBao/NotificationPanel";
 import { useNotificationContext } from '../../contexts/NotificationContext';
 import BaiDangChiTietModal from "../BinhLuan/BaiDangChiTietModal";
 
+// Thêm import useState, useEffect nếu chưa có
+// import { useState, useEffect } from 'react';
+
+// Hàm lấy tổng số tin nhắn chưa đọc từ localStorage (giả sử conversations lưu ở local hoặc có thể truyền prop)
+function getTotalUnreadMessages() {
+  try {
+    const conversations = JSON.parse(localStorage.getItem('conversations') || '[]');
+    return conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
 const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
   const [activeTab, setActiveTab] = useState();
   const navigate = useNavigate();
@@ -20,6 +33,14 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
   const { unreadCount } = useNotificationContext();
   const [showPostModal, setShowPostModal] = useState(false);
   const [postDetail, setPostDetail] = useState(null);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(getTotalUnreadMessages());
+  // Cập nhật lại khi conversations thay đổi trong localStorage (polling đơn giản)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setUnreadMessageCount(getTotalUnreadMessages());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Khi search đóng, activeTab không còn là 'Search'
   useEffect(() => {
@@ -75,6 +96,11 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
               <div key={item.title} onClick={() => handleTabClick(item.title)} className="flex items-center mb-5 cursor-pointer text-lg relative">
                 {activeTab === item.title ? item.activeIcon : item.icon}
                 {activeTab !== "Search" && <p className={`${activeTab === item.title ? "font-bold text-red-500" : "font-semyibold"}`}>{item.title}</p>}
+                {item.title === "Message" && unreadMessageCount > 0 && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-badge">
+                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                  </div>
+                )}
                 {item.title === "Notification" && unreadCount > 0 && (
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-badge">
                     {unreadCount}

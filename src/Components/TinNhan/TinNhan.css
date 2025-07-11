@@ -154,6 +154,15 @@
   font-weight: bold;
   font-size: 1.1rem;
 }
+.messenger-header-btn {
+  margin-left: auto;
+  background: #f0f2f5;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 1.2em;
+  cursor: pointer;
+}
 .messenger-chat-body {
   display: flex;
   flex-direction: column;
@@ -162,16 +171,21 @@
   overflow-y: auto;
 }
 .messenger-message {
-  background: #f0f2f5;
+
   color: #222;
   border-radius: 18px;
   margin: 6px 0;
   max-width: 70%;
   padding: 8px 16px;
-  text-align: left;
-  align-self: flex-start;
+  text-align: center;
+  align-self: center;
   word-break: break-word;
   position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+  min-width: 200px;
 }
 .messenger-message.my-message {
   background: #ff4d4f;
@@ -480,4 +494,71 @@
   margin-left: 0;
   margin-right: 44px;
   text-align: right;
+}
+
+.messenger-header-modal {
+  position: absolute;
+  top: 60px;
+  right: 30px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px #0002;
+  z-index: 100;
+  min-width: 180px;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+.messenger-header-modal button {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  text-align: left;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.messenger-header-modal button:hover {
+  background: #f0f2f5;
+}
+.messenger-modal-overlay {
+  position: fixed;
+  z-index: 2000;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.messenger-modal-content {
+  background: #fff;
+  border-radius: 16px;
+  min-width: 320px;
+  max-width: 95vw;
+  padding: 24px 20px 20px 20px;
+  box-shadow: 0 4px 32px #0002;
+}
+.messenger-modal-content h3, .messenger-modal-content h4 {
+  margin-top: 0;
+}
+.messenger-modal-content input {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 8px;
+}
+.messenger-modal-content button {
+  background: #ff4d4f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 0;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 4px;
+  transition: background 0.2s;
+}
+.messenger-modal-content button:hover {
+  background: #d9363e;
 }

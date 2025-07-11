@@ -14,7 +14,6 @@ const ReqUserPostPart = ({ userId }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const tabs = [
     { tab: "Post", icon: <AiOutlineTable></AiOutlineTable> },
-    { tab: "Reels", icon: <RiVideoAddLine></RiVideoAddLine> },
     { tab: "Saved", icon: <BiBookmark /> },
     { tab: "Tagged", icon: <AiOutlineUser></AiOutlineUser> },
   ];
