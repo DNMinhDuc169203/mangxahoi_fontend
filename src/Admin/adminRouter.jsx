@@ -5,15 +5,20 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import UserManagement from './pages/QuanLyNguoiDung';
 import PostManagement from './pages/QuanLyBaiDang';
-import ReportManagement from './pages/ReportManagement';
-import PolicyManagement from './pages/PolicyManagement';
-import TrendManagement from './pages/TrendManagement';
+import ReportManagement from './pages/QuanLyBaoCao';
+import PolicyManagement from './pages/QuanLyChinhSach';
+import TrendManagement from './pages/QuanLyXuHuong';
+import AdminProtectedRoute from './AdminProtectedRoute';
 
 const AdminRouter = () => {
   return (
     <Routes>
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin" element={<AdminLayout />}>
+      <Route path="/admin" element={
+        <AdminProtectedRoute>
+          <AdminLayout />
+        </AdminProtectedRoute>
+      }>
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="posts" element={<PostManagement />} />

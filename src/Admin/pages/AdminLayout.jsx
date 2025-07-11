@@ -39,7 +39,6 @@ const AdminLayout = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <img src={admin.anhDaiDien || 'https://ui-avatars.com/api/?name=Admin'} alt="avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid #b71c1c' }} />
               <span style={{ fontWeight: 600, color: '#23272f', fontSize: 17 }}>{admin.hoTen || 'Quản trị viên'}</span>
-              <button style={{ background: '#b71c1c', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 18px', fontWeight: 500, marginLeft: 16, cursor: 'pointer', fontSize: 15 }}>Đăng xuất</button>
             </div>
           )}
         </div>

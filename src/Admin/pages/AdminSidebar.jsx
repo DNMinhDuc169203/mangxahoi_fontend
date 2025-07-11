@@ -1,5 +1,7 @@
 import React from 'react';
 import { FaTachometerAlt, FaUsers, FaFileAlt, FaFlag, FaGavel, FaHashtag, FaSignOutAlt } from 'react-icons/fa';
+import { logoutAdmin } from '../services/ChinhSachService';
+import { useNavigate } from 'react-router-dom';
 
 const menu = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: <FaTachometerAlt /> },
@@ -11,6 +13,18 @@ const menu = [
 ];
 
 const AdminSidebar = ({ currentPath, onNavigate }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem('adminToken');
+    try {
+      if (token) await logoutAdmin(token);
+    } catch (e) {}
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminInfo');
+    navigate('/admin/login');
+  };
+
   return (
     <div style={{
       width: 250,
@@ -63,7 +77,9 @@ const AdminSidebar = ({ currentPath, onNavigate }) => {
         ))}
       </ul>
       <div style={{ width: '100%', textAlign: 'center', marginBottom: 32 }}>
-        <button style={{ background: 'none', border: 'none', color: '#fff', fontWeight: 500, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, margin: '0 auto' }}>
+        <button style={{ background: 'none', border: 'none', color: '#fff', fontWeight: 500, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, margin: '0 auto' }}
+          onClick={handleLogout}
+        >
           <FaSignOutAlt style={{ fontSize: 18 }} /> Đăng xuất
         </button>
       </div>

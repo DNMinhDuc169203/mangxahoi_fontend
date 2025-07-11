@@ -96,7 +96,7 @@ const AdminDashboard = () => {
             <div style={{ fontSize: 30, fontWeight: 900, opacity: 0.7 }}>
               {loading ? '...' :
                 c.key === 'trendTuanNay'
-                  ? (data?.trendTuanNay?.hashtagPhoThong ? `#${data.trendTuanNay.hashtagPhoThong}` : '...')
+                  ? (data?.trendTuanNay?.hashtagPhoThong ? `${data.trendTuanNay.hashtagPhoThong}` : '...')
                   : (data?.[c.key] ?? '...')
               }
             </div>

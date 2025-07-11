@@ -12,6 +12,7 @@ import Verify from "../XacThuc/XacThuc";
 import ForgotPassword from "../QuenMatKhau/QuenMatKhau";
 import SearchComponents from "../../Components/TimKiem/TimKiem";
 import FriendsPage from "../BanBe/Banbe";
+import AdminRouter from '../../Admin/adminRouter';
 
 const ProfileWithId = () => {
   const { id } = useParams();
@@ -88,6 +89,7 @@ const Router = () => {
             <Route path="/verify" element={<Verify />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/messages" element={<TinNhan />} />
+            <Route path="/admin/*" element={<AdminRouter />} />
           </Routes>
         </div>
       </div>

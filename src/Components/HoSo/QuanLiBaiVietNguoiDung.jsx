@@ -86,7 +86,7 @@ const ReqUserPostPart = ({ userId }) => {
             ) : posts.length === 0 ? (
               <div>Chưa có bài viết nào.</div>
             ) : (
-              posts.map((post) => (
+              posts.filter(post => !post.biAn && post.biAn !== 1).map((post) => (
                 <ReqUserPostCard key={post.id} post={post} onClick={() => handleOpenModal(post)} />
               ))
             )}
