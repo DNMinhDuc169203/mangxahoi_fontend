@@ -3,15 +3,37 @@ import "./DangNhap.css";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useToast } from "@chakra-ui/react";
+import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure } from '@chakra-ui/react';
+import { useEffect } from 'react';
 
 const Login = () => {
   const navigate = useNavigate();
   const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [policy, setPolicy] = useState(null);
   const [form, setForm] = useState({
     emailHoacSoDienThoai: "",
     matKhau: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    // Kiểm tra nếu user vừa đăng ký xong (chưa từng xem chính sách)
+    const hasSeenPolicy = localStorage.getItem('hasSeenPolicy');
+    if (!hasSeenPolicy && localStorage.getItem('user')) {
+      // Gọi API lấy chính sách mới nhất
+      axios.get('http://localhost:8080/network/api/chinh-sach/moi-nhat')
+        .then(res => {
+          setPolicy(res.data);
+          onOpen();
+        });
+    }
+  }, []);
+
+  const handleClosePolicyModal = () => {
+    localStorage.setItem('hasSeenPolicy', 'true');
+    onClose();
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -46,6 +68,7 @@ const Login = () => {
         isClosable: true,
         position: "top",
       });
+      localStorage.setItem('showPolicyModal', 'true');
       setTimeout(() => navigate("/"), 800);
     } catch (err) {
       const msg = err.response?.data?.message || "";
@@ -72,6 +95,24 @@ const Login = () => {
 
   return (
     <div className="login-container">
+      {/* Modal chính sách */}
+      <Modal isOpen={isOpen} onClose={handleClosePolicyModal} isCentered size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Chính sách sử dụng TopTrend</ModalHeader>
+          <ModalBody>
+            {policy ? (
+              <>
+                <div className="font-bold mb-2">{policy.tieuDe}</div>
+                <div style={{ whiteSpace: 'pre-line' }}>{policy.noiDung}</div>
+              </>
+            ) : 'Đang tải...'}
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" onClick={handleClosePolicyModal}>Tôi đã đọc và đồng ý</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       <div className="login-form-section">
         <form className="login-form-box" onSubmit={handleSubmit}>
           <input

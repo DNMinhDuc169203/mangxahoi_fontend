@@ -7,6 +7,7 @@ import PostCard from "../../Components/BaiViet/BaiDang";
 import CreatePostModal from "../../Components/BaiViet/TaoBaiDangModal";
 import { useDisclosure } from "@chakra-ui/react";
 import BanDangNghiGi from "../../Components/BaiViet/BanDangNghiGi";
+import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@chakra-ui/react';
 
 const HomePage = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -20,6 +21,28 @@ const HomePage = () => {
   const loadingMoreRef = useRef(false);
   const [modalPost, setModalPost] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const policyModal = useDisclosure();
+  const [policy, setPolicy] = useState(null);
+
+  useEffect(() => {
+    if (localStorage.getItem('showPolicyModal') && !localStorage.getItem('hasSeenPolicy')) {
+      axios.get('http://localhost:8080/network/api/chinh-sach/moi-nhat', { headers: {} })
+        .then(res => {
+          setPolicy(res.data);
+          policyModal.onOpen();
+          localStorage.removeItem('showPolicyModal');
+        })
+        .catch(() => {
+          localStorage.removeItem('showPolicyModal');
+        });
+    }
+  }, []);
+
+  const handleClosePolicyModal = () => {
+    localStorage.setItem('hasSeenPolicy', 'true');
+    localStorage.removeItem('showPolicyModal');
+    policyModal.onClose();
+  };
 
   useEffect(() => {
     const fetchNewsfeed = async () => {
@@ -91,6 +114,24 @@ const HomePage = () => {
 
   return (
     <div>
+      {/* Modal chính sách */}
+      <Modal isOpen={policyModal.isOpen} onClose={handleClosePolicyModal} isCentered size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Chính sách sử dụng TopTrend</ModalHeader>
+          <ModalBody>
+            {policy ? (
+              <>
+                <div className="font-bold mb-2">{policy.tieuDe}</div>
+                <div style={{ whiteSpace: 'pre-line' }}>{policy.noiDung}</div>
+              </>
+            ) : 'Đang tải...'}
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" onClick={handleClosePolicyModal}>Tôi đã đọc và đồng ý</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       <div className="mt-10 flex w-[100%] justify-center">
         <div className="w-[44%] px-10">
           <div className="storyDiv flex space-x-2 border p-4 rounded-md justify-start w-full">
@@ -106,7 +147,7 @@ const HomePage = () => {
             ) : posts.length === 0 ? (
               <div>Không có bài viết nào.</div>
             ) : (
-              posts.map((post) => (
+              posts.filter(post => !post.biAn && post.biAn !== 1).map((post) => (
                 <PostCard
                   key={post.id}
                   post={post}

@@ -4,7 +4,7 @@ import {
   hidePost,
   deletePost,
   restorePost
-} from '../services/postService';
+} from '../services/BaiDangService';
 
 const statusOptions = [
   { value: '', label: 'Trạng thái' },
@@ -178,14 +178,14 @@ const PostManagement = () => {
                         Ẩn
                       </button>
                     )}
-                    <button
+                    {/* <button
                       onClick={() => handleAction(post.id, 'delete')}
                       className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-50 text-red-700 font-semibold border border-red-200 shadow-sm hover:bg-red-100 transition"
                       title="Xóa bài viết"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                       Xóa
-                    </button>
+                    </button> */}
                     {post.biAn && (
                       <button
                         onClick={() => handleAction(post.id, 'restore')}

@@ -23,6 +23,8 @@ const UserManagement = () => {
   const [thongTinViPham, setThongTinViPham] = useState(null); // Thông tin tổng quan vi phạm
   const [loaiViPhamKhac, setLoaiViPhamKhac] = useState(''); // Lưu loại vi phạm tự nhập
   const [thongTinViPhamMap, setThongTinViPhamMap] = useState({});
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Danh sách loại vi phạm enum (đồng bộ backend)
   const LOAI_VI_PHAM_OPTIONS = [
@@ -39,11 +41,12 @@ const UserManagement = () => {
     setLoading(true);
     setError('');
     const fetchUsers = () => {
-      axios.get(API_USERS, {
+      axios.get(`http://localhost:8080/network/api/admin/nguoi-dung?page=${page}&size=10`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
       })
         .then(res => {
           setUsers(res.data.content || []);
+          setTotalPages(res.data.totalPages || 1);
           setLoading(false);
         })
         .catch(() => {
@@ -54,7 +57,7 @@ const UserManagement = () => {
     fetchUsers();
     const interval = setInterval(fetchUsers, 5000); 
     return () => clearInterval(interval);
-  }, []);
+  }, [page]);
 
   // Lấy số lần vi phạm cho từng user
   useEffect(() => {
@@ -198,6 +201,10 @@ const UserManagement = () => {
       .finally(() => setModalLoading(false));
   };
 
+  const handlePageChange = (newPage) => {
+    if (newPage >= 0 && newPage < totalPages) setPage(newPage);
+  };
+
   return (
     <div style={{ padding: 32 }}>
       <h1 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 24 }}>Quản lý tài khoản người dùng</h1>
@@ -339,6 +346,25 @@ const UserManagement = () => {
             ))}
           </tbody>
         </table>
+        <div className="mt-6 flex justify-center items-center gap-4">
+          <button
+            onClick={() => handlePageChange(page - 1)}
+            disabled={page === 0}
+            className={`w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200 transition ${page === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:text-blue-600'}`}
+            title="Trang trước"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <span className="text-gray-700 font-medium">Trang {page + 1} / {totalPages}</span>
+          <button
+            onClick={() => handlePageChange(page + 1)}
+            disabled={page + 1 >= totalPages}
+            className={`w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200 transition ${(page + 1 >= totalPages) ? 'opacity-50 cursor-not-allowed' : 'hover:text-blue-600'}`}
+            title="Trang sau"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
       </div>
       {/* Modal xác nhận khóa/mở khóa */}
       {modalType === 'khoa' && (
