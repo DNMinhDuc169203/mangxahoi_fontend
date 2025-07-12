@@ -37,6 +37,24 @@ const ReqUserPostPart = ({ userId }) => {
         }
       };
       fetchPosts();
+    } else if (activeTab === "Saved") {
+      const fetchSaved = async () => {
+        setLoading(true);
+        try {
+          const token = localStorage.getItem("token");
+          if (!userId) return;
+          const res = await axios.get(
+            `http://localhost:8080/network/api/saved-posts/user/${userId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setPosts(res.data || []);
+        } catch {
+          setPosts([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchSaved();
     }
   }, [activeTab, userId]);
 
@@ -87,6 +105,19 @@ const ReqUserPostPart = ({ userId }) => {
             ) : (
               posts.filter(post => !post.biAn && post.biAn !== 1).map((post) => (
                 <ReqUserPostCard key={post.id} post={post} onClick={() => handleOpenModal(post)} />
+              ))
+            )}
+          </div>
+        )}
+        {activeTab === "Saved" && (
+          <div className="flex flex-wrap">
+            {loading ? (
+              <div>Đang tải bài viết đã lưu...</div>
+            ) : posts.length === 0 ? (
+              <div>Chưa có bài viết đã lưu nào.</div>
+            ) : (
+              posts.filter(item => item.baiViet && !item.baiViet.biAn && item.baiViet.biAn !== 1).map((item) => (
+                <ReqUserPostCard key={item.id} post={item.baiViet} onClick={() => handleOpenModal(item.baiViet)} />
               ))
             )}
           </div>

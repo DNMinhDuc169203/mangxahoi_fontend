@@ -23,10 +23,10 @@ import ModalChinhSuaBaiViet from './ModalChinhSuaBaiViet';
 import ModalChonQuyenRiengTu from './ModalChonQuyenRiengTu';
 import { useNavigate } from "react-router-dom";
 
-const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdated }) => {
+const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdated, isSaved: isSavedProp, refreshSavedPosts }) => {
   const [showDropDown, setShowDropDown] = useState(false);
   const [isPostLiked, setIsPostLiked] = useState(post?.daThich || false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(!!isSavedProp);
   const [likes, setLikes] = useState(post?.soLuotThich ?? 0);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -59,8 +59,41 @@ const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdat
     }
   }, [detailPost?.soLuotBinhLuan]);
 
-  const handleSavePost = () => {
-    setIsSaved(!isSaved);
+  React.useEffect(() => {
+    setIsSaved(!!isSavedProp);
+    console.log('Render PostCard:', post.id, 'isSaved:', isSavedProp);
+  }, [isSavedProp]);
+
+  const handleSavePost = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      if (!isSaved) {
+        await axios.post(
+          `http://localhost:8080/network/api/saved-posts/save`,
+          {},
+          {
+            params: { userId: user.id, postId: post.id },
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        setIsSaved(true);
+        toast({ title: 'Đã lưu bài viết!', status: 'success', duration: 1200, isClosable: true, position: 'top' });
+        if (refreshSavedPosts) refreshSavedPosts();
+      } else {
+        await axios.delete(
+          `http://localhost:8080/network/api/saved-posts/unsave`,
+          {
+            params: { userId: user.id, postId: post.id },
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        setIsSaved(false);
+        toast({ title: 'Đã bỏ lưu bài viết!', status: 'info', duration: 1200, isClosable: true, position: 'top' });
+        if (refreshSavedPosts) refreshSavedPosts();
+      }
+    } catch (err) {
+      toast({ title: 'Có lỗi khi lưu/bỏ lưu bài viết!', status: 'error', duration: 1200, isClosable: true, position: 'top' });
+    }
   };
 
   
