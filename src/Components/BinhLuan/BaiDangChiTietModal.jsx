@@ -4,6 +4,7 @@ import { AiFillHeart, AiOutlineLeft, AiOutlineRight, AiOutlineGlobal, AiFillLock
 import { FaComment, FaRegSmile, FaUserFriends } from 'react-icons/fa';
 import { BsThreeDots } from 'react-icons/bs';
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function formatTimeAgo(dateString) {
   const now = new Date();
@@ -57,6 +58,8 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user.id;
+
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     setCurrentImg(0);
@@ -390,8 +393,8 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
     return (
       <Box mb={2} ml={level * 6}>
         <Flex align="center" gap={2}>
-          <Avatar src={comment.anhDaiDienNguoiDung || "/anhbandau.jpg"}  size={level === 0 ? "sm" : "xs"} />
-          <Text fontWeight="bold" fontSize="sm">{comment.hoTenNguoiDung || "Ẩn danh"}</Text>
+          <Avatar src={comment.anhDaiDienNguoiDung || "/anhbandau.jpg"} size={level === 0 ? "sm" : "xs"} className="cursor-pointer" onClick={() => comment.idNguoiDung && navigate(`/profile/${comment.idNguoiDung}`)} />
+          <Text fontWeight="bold" fontSize="sm" className="cursor-pointer" onClick={() => comment.idNguoiDung && navigate(`/profile/${comment.idNguoiDung}`)}>{comment.hoTenNguoiDung || "Ẩn danh"}</Text>
           <Box flex={1} />
           <Box position="relative">
             <IconButton
@@ -818,13 +821,12 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
             <Flex align="center" mb={4} gap={3} justify="space-between">
               <Flex direction="column" align="flex-start" gap={0}>
                 <Flex align="center" gap={2}>
-                  <Avatar size="md" src={post.anhDaiDienNguoiDung || "/anhbandau.jpg"}  />
-                  <Text fontWeight="bold">{post.hoTenNguoiDung}</Text>
+                  <Avatar size="md" src={post.anhDaiDienNguoiDung || "/anhbandau.jpg"} className="cursor-pointer" onClick={() => post.idNguoiDung && navigate(`/profile/${post.idNguoiDung}`)} />
+                  <Text fontWeight="bold" className="cursor-pointer" onClick={() => post.idNguoiDung && navigate(`/profile/${post.idNguoiDung}`)}>{post.hoTenNguoiDung}</Text>
                   {renderCheDo(post.cheDoRiengTu)}
                   <Text fontSize="sm" color="gray.500" ml={2}>
                     {post.ngayTao ? formatTimeAgo(post.ngayTao) : ""}
                   </Text>
-                  
                 </Flex>
               </Flex>
               {/* Nút ba chấm đã có ở góc phải */}

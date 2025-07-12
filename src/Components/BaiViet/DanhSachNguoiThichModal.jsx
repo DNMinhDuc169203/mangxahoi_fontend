@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from '@chakra-ui/react';
+import { useNavigate } from "react-router-dom";
 
 const DanhSachNguoiThichModal = ({ isOpen, onClose, baiVietId, soLuotThich }) => {
     const [danhSachNguoiThich, setDanhSachNguoiThich] = useState([]);
@@ -10,6 +11,7 @@ const DanhSachNguoiThichModal = ({ isOpen, onClose, baiVietId, soLuotThich }) =>
     const [friendStatus, setFriendStatus] = useState({}); // { [id]: status }
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const toast = useToast();
+    const navigate = useNavigate();
 
     const trangThaiDaGuiLoiMoi = ['da_gui_loi_moi', 'cho_chap_nhan'];
 
@@ -138,10 +140,13 @@ const DanhSachNguoiThichModal = ({ isOpen, onClose, baiVietId, soLuotThich }) =>
                                             <img
                                                 src={nguoiDung.anhDaiDien}
                                                 alt={nguoiDung.hoTen}
-                                                className="w-10 h-10 rounded-full object-cover"
+                                                className="w-10 h-10 rounded-full object-cover cursor-pointer"
+                                                onClick={() => navigate(`/profile/${nguoiDung.id}`)}
                                             />
                                         ) : (
-                                            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center cursor-pointer"
+                                                onClick={() => navigate(`/profile/${nguoiDung.id}`)}
+                                            >
                                                 <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                                                 </svg>
@@ -151,7 +156,9 @@ const DanhSachNguoiThichModal = ({ isOpen, onClose, baiVietId, soLuotThich }) =>
 
                                     {/* Thông tin người dùng */}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 truncate">
+                                        <p className="text-sm font-medium text-gray-900 truncate cursor-pointer"
+                                            onClick={() => navigate(`/profile/${nguoiDung.id}`)}
+                                        >
                                             {nguoiDung.hoTen}
                                         </p>
                                         {nguoiDung.gioiThieu && (

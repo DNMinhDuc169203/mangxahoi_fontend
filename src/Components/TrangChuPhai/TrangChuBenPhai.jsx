@@ -2,12 +2,15 @@ import React, { useEffect, useState } from "react";
 import SuggetionCard from "./SuggetionCard";
 import SuggestionModal from "./SuggestionModal";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const HomeRight = () => {
   const [user, setUser] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const navigate = useNavigate();
 
   const fetchUser = async () => {
     const token = localStorage.getItem("token");
@@ -68,13 +71,14 @@ const HomeRight = () => {
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
           <img
-            className="w-12 h-12 rounded-full object-cover"
+            className="w-12 h-12 rounded-full object-cover cursor-pointer"
             src={user?.anhDaiDien || "/anhbandau.jpg"}
             alt={user?.hoTen || "User"}
+            onClick={() => user?.id && navigate(`/profile/${user.id}`)}
           />
           <div className="ml-3">
-            <p className="font-semibold text-gray-900">{user?.hoTen || "Fullname"}</p>
-            <p className="text-sm text-gray-500">{user?.email || "email@example.com"}</p>
+            <p className="font-semibold text-gray-900 cursor-pointer" onClick={() => user?.id && navigate(`/profile/${user.id}`)}>{user?.hoTen || "Fullname"}</p>
+            <p className="text-sm text-gray-500 cursor-pointer" onClick={() => user?.id && navigate(`/profile/${user.id}`)}>{user?.email || "email@example.com"}</p>
           </div>
         </div>
         <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">

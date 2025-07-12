@@ -21,6 +21,7 @@ import ModalTuyChonBaiViet from './ModalTuyChonBaiViet';
 import ModalBaoCaoBaiViet from './ModalBaoCaoBaiViet';
 import ModalChinhSuaBaiViet from './ModalChinhSuaBaiViet';
 import ModalChonQuyenRiengTu from './ModalChonQuyenRiengTu';
+import { useNavigate } from "react-router-dom";
 
 const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdated }) => {
   const [showDropDown, setShowDropDown] = useState(false);
@@ -44,6 +45,7 @@ const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdat
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isOwnPost = post.idNguoiDung === user.id;
+  const navigate = useNavigate();
 
   // Đồng bộ commentCount khi post thay đổi
   React.useEffect(() => {
@@ -271,12 +273,13 @@ const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdat
         <div className="flex justify-between items-center w-full py-4 px-5">
           <div className="flex items-center">
             <img
-              className="h-12 w-12 rounded-full"
+              className="h-12 w-12 rounded-full cursor-pointer"
               src={avatar}
               alt=""
+              onClick={() => post.idNguoiDung && navigate(`/profile/${post.idNguoiDung}`)}
             />
             <div className="pl-2">
-              <p className="font-semibold text-sm ">{username}</p>
+              <p className="font-semibold text-sm cursor-pointer" onClick={() => post.idNguoiDung && navigate(`/profile/${post.idNguoiDung}`)}>{username}</p>
               <div className="flex items-center space-x-2 mt-1">
                 {renderCheDo(post?.cheDoRiengTu)}
                 {post?.ngayTao && (
