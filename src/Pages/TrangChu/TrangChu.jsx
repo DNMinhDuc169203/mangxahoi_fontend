@@ -23,6 +23,8 @@ const HomePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const policyModal = useDisclosure();
   const [policy, setPolicy] = useState(null);
+  const [savedPostIds, setSavedPostIds] = useState([]);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
     if (localStorage.getItem('showPolicyModal') && !localStorage.getItem('hasSeenPolicy')) {
@@ -74,6 +76,25 @@ const HomePage = () => {
     // eslint-disable-next-line
   }, [page]);
 
+  useEffect(() => {
+    const fetchSavedPosts = async () => {
+      if (!user?.id) return;
+      const token = localStorage.getItem('token');
+      try {
+        const res = await axios.get(`http://localhost:8080/network/api/saved-posts/user/${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const ids = res.data
+          .filter(item => item.baiViet && item.baiViet.id != null)
+          .map(item => Number(item.baiViet.id));
+        setSavedPostIds(ids);
+      } catch {
+        setSavedPostIds([]);
+      }
+    };
+    fetchSavedPosts();
+  }, [user?.id]);
+
   // Infinite scroll handler
   useEffect(() => {
     const handleScroll = () => {
@@ -110,6 +131,19 @@ const HomePage = () => {
   const handlePostUpdated = (updatedPost) => {
     setPosts(prevPosts => prevPosts.map(p => p.id === updatedPost.id ? updatedPost : p));
     setModalPost(prev => (prev && prev.id === updatedPost.id ? updatedPost : prev));
+  };
+
+  const refreshSavedPosts = async () => {
+    if (!user?.id) return;
+    const token = localStorage.getItem('token');
+    try {
+      const res = await axios.get(`http://localhost:8080/network/api/saved-posts/user/${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSavedPostIds(res.data.map(item => item.baiViet.id));
+    } catch {
+      setSavedPostIds([]);
+    }
   };
 
   return (
@@ -151,6 +185,8 @@ const HomePage = () => {
                 <PostCard
                   key={post.id}
                   post={post}
+                  isSaved={savedPostIds.includes(Number(post.id))}
+                  refreshSavedPosts={refreshSavedPosts}
                   onLikePost={handleLikePost}
                   onCommentAdded={handleCommentAdded}
                   onPostDeleted={handlePostDeleted}

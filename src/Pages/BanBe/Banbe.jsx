@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Tabs, TabList, TabPanels, Tab, TabPanel, Avatar, Button, Box, Spinner, useToast } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
 
-const FriendCard = ({ user, actions }) => (
+const FriendCard = ({ user, actions, onClick }) => (
   <Box className="flex items-center justify-between p-4 border rounded-lg shadow-sm mb-3 bg-white hover:shadow-md transition">
-    <div className="flex items-center">
+    <div className="flex items-center cursor-pointer" onClick={onClick}>
       <Avatar src={user.anhDaiDien || "/anhbandau.jpg"} name={user.hoTen} size="lg" />
       <div className="ml-4">
         <div className="font-semibold text-lg">{user.hoTen}</div>
@@ -22,6 +23,7 @@ const FriendsPage = () => {
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
+  const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
 
@@ -103,10 +105,11 @@ const FriendsPage = () => {
               sent.map(user => (
                 <FriendCard
                   key={user.idLoiMoi}
-                  user={{ hoTen: user.hoTenNguoiNhan, anhDaiDien: user.anhDaiDienNguoiNhan, email: user.emailNguoiNhan }}
+                  user={{ hoTen: user.hoTenNguoiNhan, anhDaiDien: user.anhDaiDienNguoiNhan, email: user.emailNguoiNhan, id: user.idNguoiNhan }}
                   actions={[
                     <Button colorScheme="red" size="sm" onClick={() => handleCancelSent(user.idLoiMoi)}>Hủy lời mời</Button>
                   ]}
+                  onClick={() => user.idNguoiNhan && navigate(`/profile/${user.idNguoiNhan}`)}
                 />
               ))
             }
@@ -116,11 +119,12 @@ const FriendsPage = () => {
               received.map(user => (
                 <FriendCard
                   key={user.idLoiMoi}
-                  user={{ hoTen: user.hoTenNguoiGui, anhDaiDien: user.anhDaiDienNguoiGui, email: user.emailNguoiGui }}
+                  user={{ hoTen: user.hoTenNguoiGui, anhDaiDien: user.anhDaiDienNguoiGui, email: user.emailNguoiGui, id: user.idNguoiGui }}
                   actions={[
                     <Button colorScheme="blue" size="sm" onClick={() => handleAccept(user.idLoiMoi)}>Chấp nhận</Button>,
                     <Button colorScheme="gray" size="sm" onClick={() => handleDecline(user.idLoiMoi)}>Từ chối</Button>
                   ]}
+                  onClick={() => user.idNguoiGui && navigate(`/profile/${user.idNguoiGui}`)}
                 />
               ))
             }
@@ -134,6 +138,7 @@ const FriendsPage = () => {
                   actions={[
                     <Button colorScheme="gray" size="sm" onClick={() => handleUnfriend(user.id)}>Hủy kết bạn</Button>
                   ]}
+                  onClick={() => user.id && navigate(`/profile/${user.id}`)}
                 />
               ))
             }

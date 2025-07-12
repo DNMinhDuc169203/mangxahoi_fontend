@@ -40,6 +40,10 @@ export const ProfileUserDetails = ({ userId }) => {
   });
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [friendStatus, setFriendStatus] = useState(null); // null, 'friend', 'pending', 'none'
+  const [receivedRequest, setReceivedRequest] = useState(null); // {idLoiMoi, ...} nếu có lời mời đã nhận
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+  const [unfriendConfirmOpen, setUnfriendConfirmOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const fetchUser = () => {
     const token = localStorage.getItem("token") || "";
@@ -74,12 +78,20 @@ export const ProfileUserDetails = ({ userId }) => {
           axios.get(`http://localhost:8080/network/api/ket-ban/trang-thai/${res.data.id}`, {
             headers: { Authorization: `Bearer ${token}` },
           }).then(r => {
-            // Map trạng thái backend sang FE
             let status = r.data.status;
             if (status === 'ban_be') setFriendStatus('friend');
             else if (status === 'cho_chap_nhan') setFriendStatus('pending');
-            else setFriendStatus('none');
+            else if (status === 'bi_chan') { setIsBlocked(true); setFriendStatus('none'); }
+            else { setIsBlocked(false); setFriendStatus('none'); }
           }).catch(() => setFriendStatus(null));
+          // Kiểm tra nếu có lời mời đã nhận từ user này
+          axios.get(`http://localhost:8080/network/api/ket-ban/danh-sach/loi-moi-nhan?page=0&size=20`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then(resList => {
+            const found = resList.data.content.find(lm => lm.idNguoiGui === res.data.id);
+            if (found) setReceivedRequest(found);
+            else setReceivedRequest(null);
+          }).catch(() => setReceivedRequest(null));
         }
       })
       .catch(() => setError("Không thể tải thông tin người dùng."));
@@ -245,7 +257,9 @@ export const ProfileUserDetails = ({ userId }) => {
   return (
     <div className="py-10">
       <div className="flex items-center">
-        <div className="w-[15%] cursor-pointer" onClick={onAvatarOpen}>
+        <div className="w-[15%]" 
+          {...(isOwnProfile ? { className: "w-[15%] cursor-pointer", onClick: onAvatarOpen } : {})}
+        >
           <img
             className="w-32 h-32 rounded-full"
             src={user.anhDaiDien || "/anhbandau.jpg"}
@@ -272,8 +286,92 @@ export const ProfileUserDetails = ({ userId }) => {
               </>
             ) : (
               <>
-                {friendStatus === 'friend' ? (
-                  <Button colorScheme="gray" disabled>Đã là bạn bè</Button>
+                {isBlocked ? (
+                  <>
+                    <Button colorScheme="red" disabled>Đã chặn</Button>
+                    <Button colorScheme="gray" onClick={async () => {
+                      const token = localStorage.getItem("token") || "";
+                      try {
+                        await axios.delete(`http://localhost:8080/network/api/ket-ban/bo-chan/${user.id}`, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        setIsBlocked(false);
+                        toast({
+                          title: 'Đã gỡ chặn người dùng!',
+                          status: 'info',
+                          duration: 500,
+                          isClosable: true,
+                          position: 'top',
+                        });
+                      } catch (err) {
+                        toast({
+                          title: err?.response?.data?.message || 'Có lỗi khi gỡ chặn!',
+                          status: 'error',
+                          duration: 500,
+                          isClosable: true,
+                          position: 'top',
+                        });
+                      }
+                    }}>Gỡ chặn</Button>
+                  </>
+                ) : friendStatus === 'friend' ? (
+                  <>
+                    <Button colorScheme="gray" onClick={() => setUnfriendConfirmOpen(true)}>Hủy kết bạn</Button>
+                    <Button colorScheme="red" onClick={() => setBlockConfirmOpen(true)}>Chặn</Button>
+                  </>
+                ) : receivedRequest ? (
+                  <>
+                    <Button colorScheme="blue" onClick={async () => {
+                      const token = localStorage.getItem("token") || "";
+                      try {
+                        await axios.post(`http://localhost:8080/network/api/ket-ban/chap-nhan/${receivedRequest.idLoiMoi}`, null, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        setFriendStatus('friend');
+                        setReceivedRequest(null);
+                        toast({
+                          title: 'Đã chấp nhận kết bạn!',
+                          status: 'success',
+                          duration: 500,
+                          isClosable: true,
+                          position: 'top',
+                        });
+                      } catch (err) {
+                        toast({
+                          title: err?.response?.data?.message || 'Có lỗi khi chấp nhận!',
+                          status: 'error',
+                          duration: 500,
+                          isClosable: true,
+                          position: 'top',
+                        });
+                      }
+                    }}>Chấp nhận</Button>
+                    <Button colorScheme="gray" onClick={async () => {
+                      const token = localStorage.getItem("token") || "";
+                      try {
+                        await axios.delete(`http://localhost:8080/network/api/ket-ban/tu-choi/${receivedRequest.idLoiMoi}`, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        setFriendStatus('none');
+                        setReceivedRequest(null);
+                        toast({
+                          title: 'Đã từ chối lời mời!',
+                          status: 'info',
+                          duration: 500,
+                          isClosable: true,
+                          position: 'top',
+                        });
+                      } catch (err) {
+                        toast({
+                          title: err?.response?.data?.message || 'Có lỗi khi từ chối!',
+                          status: 'error',
+                          duration: 500,
+                          isClosable: true,
+                          position: 'top',
+                        });
+                      }
+                    }}>Từ chối</Button>
+                  </>
                 ) : friendStatus === 'pending' ? (
                   <Button colorScheme="gray" onClick={async () => {
                     const token = localStorage.getItem("token") || "";
@@ -450,6 +548,83 @@ export const ProfileUserDetails = ({ userId }) => {
               Hủy
             </Button>
           </VStack>
+        </ModalContent>
+      </Modal>
+
+      {/* Xác nhận chặn */}
+      <Modal isOpen={blockConfirmOpen} onClose={() => setBlockConfirmOpen(false)} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Xác nhận chặn</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>Bạn có chắc chắn muốn chặn người này không? Sau khi chặn, hai bạn sẽ không thể tương tác với nhau.</ModalBody>
+          <ModalFooter>
+            <Button colorScheme="red" mr={3} onClick={async () => {
+              setBlockConfirmOpen(false);
+              const token = localStorage.getItem("token") || "";
+              try {
+                await axios.post(`http://localhost:8080/network/api/ket-ban/chan/${user.id}`, null, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                setIsBlocked(true);
+                setFriendStatus('none');
+                toast({
+                  title: 'Đã chặn người dùng này!',
+                  status: 'warning',
+                  duration: 500,
+                  isClosable: true,
+                  position: 'top',
+                });
+              } catch (err) {
+                toast({
+                  title: err?.response?.data?.message || 'Có lỗi khi chặn!',
+                  status: 'error',
+                  duration: 500,
+                  isClosable: true,
+                  position: 'top',
+                });
+              }
+            }}>Chặn</Button>
+            <Button onClick={() => setBlockConfirmOpen(false)}>Hủy</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Xác nhận hủy kết bạn */}
+      <Modal isOpen={unfriendConfirmOpen} onClose={() => setUnfriendConfirmOpen(false)} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Xác nhận hủy kết bạn</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>Bạn có chắc chắn muốn hủy kết bạn với người này không?</ModalBody>
+          <ModalFooter>
+            <Button colorScheme="gray" mr={3} onClick={async () => {
+              setUnfriendConfirmOpen(false);
+              const token = localStorage.getItem("token") || "";
+              try {
+                await axios.delete(`http://localhost:8080/network/api/ket-ban/ban-be/${user.id}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                setFriendStatus('none');
+                toast({
+                  title: 'Đã hủy kết bạn!',
+                  status: 'info',
+                  duration: 500,
+                  isClosable: true,
+                  position: 'top',
+                });
+              } catch (err) {
+                toast({
+                  title: err?.response?.data?.message || 'Có lỗi khi hủy kết bạn!',
+                  status: 'error',
+                  duration: 500,
+                  isClosable: true,
+                  position: 'top',
+                });
+              }
+            }}>Hủy kết bạn</Button>
+            <Button onClick={() => setUnfriendConfirmOpen(false)}>Đóng</Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 

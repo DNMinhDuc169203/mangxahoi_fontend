@@ -16,6 +16,7 @@ import {
   themThanhVien // <-- thêm import
 } from "../../services/tinNhanService";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 // Thêm hàm formatTimeAgo
 function formatTimeAgo(dateString) {
@@ -79,6 +80,7 @@ const TinNhan = () => {
   const [addingMembers, setAddingMembers] = useState(false);
   const [addMemberError, setAddMemberError] = useState("");
   const [showMemberListModal, setShowMemberListModal] = useState(false);
+  const navigate = useNavigate();
 
   // Đóng modal khi click ra ngoài
   useEffect(() => {
@@ -588,9 +590,13 @@ const TinNhan = () => {
               <img
                 src={isGroup ? (selectedConv?.anhNhom || "./anhbandau.jpg") : (selectedConv?.anhDaiDienDoiPhuong || "./anhbandau.jpg")}
                 alt={isGroup ? selectedConv?.tenNhom : selectedConv?.tenDoiPhuong || "avatar"}
-                className="messenger-avatar"
+                className="messenger-avatar cursor-pointer"
+                onClick={() => !isGroup && selectedConv?.idDoiPhuong && navigate(`/profile/${selectedConv.idDoiPhuong}`)}
               />
-              <span>
+              <span
+                className={!isGroup ? "cursor-pointer" : undefined}
+                onClick={() => !isGroup && selectedConv?.idDoiPhuong && navigate(`/profile/${selectedConv.idDoiPhuong}`)}
+              >
                 {isGroup ? selectedConv?.tenNhom : selectedConv?.tenDoiPhuong || ""}
               </span>
               <button className="messenger-header-btn" onClick={() => setShowHeaderModal(true)}>...</button>

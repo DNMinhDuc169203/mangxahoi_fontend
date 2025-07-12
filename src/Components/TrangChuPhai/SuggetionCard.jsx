@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import axios from 'axios'
 import MutualFriendsModal from './MutualFriendsModal'
+import { useNavigate } from "react-router-dom";
 
 const SuggetionCard = ({ suggestion, onUpdate }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [isSent, setIsSent] = useState(false)
   const [showMutualFriends, setShowMutualFriends] = useState(false)
+  const navigate = useNavigate();
 
   const handleSendFriendRequest = async () => {
     const token = localStorage.getItem("token")
@@ -92,13 +94,21 @@ const SuggetionCard = ({ suggestion, onUpdate }) => {
         <div className='flex justify-between items-center'>
           <div className='flex items-center'>
             <img 
-              className='w-10 h-10 rounded-full object-cover' 
+              className='w-10 h-10 rounded-full object-cover cursor-pointer' 
               src={suggestion?.nguoiTrongGoiY?.anhDaiDien || "/anhbandau.jpg"} 
               alt={suggestion?.nguoiTrongGoiY?.hoTen || "User"} 
+              onClick={() => suggestion?.nguoiTrongGoiY?.id && navigate(`/profile/${suggestion.nguoiTrongGoiY.id}`)}
             />
             <div className='ml-3'>
-              <p className='text-sm font-semibold text-gray-900'>
+              <p className='text-sm font-semibold text-gray-900 cursor-pointer'
+                onClick={() => suggestion?.nguoiTrongGoiY?.id && navigate(`/profile/${suggestion.nguoiTrongGoiY.id}`)}
+              >
                 {suggestion?.nguoiTrongGoiY?.hoTen || "Username"}
+              </p>
+              <p className='text-xs text-gray-500 cursor-pointer'
+                onClick={() => suggestion?.nguoiTrongGoiY?.id && navigate(`/profile/${suggestion.nguoiTrongGoiY.id}`)}
+              >
+                {suggestion?.nguoiTrongGoiY?.email}
               </p>
               <button
                 onClick={() => mutualFriendsCount > 0 && setShowMutualFriends(true)}

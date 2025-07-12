@@ -13,6 +13,7 @@ import ForgotPassword from "../QuenMatKhau/QuenMatKhau";
 import SearchComponents from "../../Components/TimKiem/TimKiem";
 import FriendsPage from "../BanBe/Banbe";
 import AdminRouter from '../../Admin/adminRouter';
+import Explore from "../Explore/Explore";
 
 const ProfileWithId = () => {
   const { id } = useParams();
@@ -89,6 +90,7 @@ const Router = () => {
             <Route path="/verify" element={<Verify />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/messages" element={<TinNhan />} />
+            <Route path="/explore" element={<Explore />} />
             <Route path="/admin/*" element={<AdminRouter />} />
           </Routes>
         </div>
