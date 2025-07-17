@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const MutualFriendsModal = ({ isOpen, onClose, targetUserId, targetUserName }) => {
   const [mutualFriends, setMutualFriends] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen && targetUserId) {
@@ -87,7 +89,10 @@ const MutualFriendsModal = ({ isOpen, onClose, targetUserId, targetUserName }) =
                       {friend.email || "email@example.com"}
                     </p>
                   </div>
-                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  <button 
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    onClick={() => navigate(`/profile/${friend.id}`)}
+                  >
                     Xem trang
                   </button>
                 </div>

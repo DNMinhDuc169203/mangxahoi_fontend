@@ -244,15 +244,30 @@ const SuggestionModal = ({ isOpen, onClose, onUpdate }) => {
                         <p className="font-semibold text-gray-900">
                           {suggestion?.nguoiTrongGoiY?.hoTen || "Username"}
                         </p>
-                        <p className='text-sm text-blue-600 mt-1'>
-                          {mutualCount === null || mutualCount === undefined
-                            ? "Đang tải bạn chung..."
-                            : mutualCount === 0
-                              ? "0 bạn chung"
-                              : mutualCount === 1
-                                ? "1 bạn chung"
-                                : `${mutualCount} bạn chung`
-                          }
+                        <p className='text-sm mt-1'>
+                          <span
+                            className={
+                              mutualCount > 0
+                                ? 'text-blue-600 underline cursor-pointer hover:text-blue-800'
+                                : 'text-gray-400'
+                            }
+                            onClick={() => {
+                              if (mutualCount > 0) handleShowMutualFriends({
+                                id: suggestion?.nguoiTrongGoiY?.id,
+                                hoTen: suggestion?.nguoiTrongGoiY?.hoTen
+                              });
+                            }}
+                            title={mutualCount > 0 ? 'Xem danh sách bạn chung' : ''}
+                          >
+                            {mutualCount === null || mutualCount === undefined
+                              ? "Đang tải bạn chung..."
+                              : mutualCount === 0
+                                ? "0 bạn chung"
+                                : mutualCount === 1
+                                  ? "1 bạn chung"
+                                  : `${mutualCount} bạn chung`
+                            }
+                          </span>
                         </p>
                         {getSuggestionReason(suggestion) && (
                           <p className="text-xs text-gray-500 mt-1">

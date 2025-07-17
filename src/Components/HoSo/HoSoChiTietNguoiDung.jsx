@@ -22,6 +22,7 @@ import {
   IconButton,
 } from "@chakra-ui/react";
 import { EditIcon, SettingsIcon } from "@chakra-ui/icons";
+import MutualFriendsModal from '../TrangChuPhai/MutualFriendsModal';
 
 export const ProfileUserDetails = ({ userId }) => {
   const [user, setUser] = useState(null);
@@ -44,6 +45,8 @@ export const ProfileUserDetails = ({ userId }) => {
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [unfriendConfirmOpen, setUnfriendConfirmOpen] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [mutualFriends, setMutualFriends] = useState([]);
+  const [showMutualModal, setShowMutualModal] = useState(false);
 
   const fetchUser = () => {
     const token = localStorage.getItem("token") || "";
@@ -100,6 +103,22 @@ export const ProfileUserDetails = ({ userId }) => {
   useEffect(() => {
     fetchUser();
   }, [userId]);
+
+  // Lấy bạn chung nếu không phải hồ sơ cá nhân
+  useEffect(() => {
+    const fetchMutual = async () => {
+      const token = localStorage.getItem('token');
+      if (!token || !userId || isOwnProfile) return;
+      try {
+        const res = await axios.get(
+          `http://localhost:8080/network/api/ket-ban/ban-be-chung/${userId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setMutualFriends(res.data || []);
+      } catch {}
+    };
+    fetchMutual();
+  }, [userId, isOwnProfile]);
 
   const handleEditChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
@@ -267,70 +286,165 @@ export const ProfileUserDetails = ({ userId }) => {
           />
         </div>
         <div className="space-y-5">
-          <div className="flex space-x-10 items-center">
-            <p className="font-bold text-xl">{user.hoTen || "Chưa cập nhật"}</p>
-            {isOwnProfile ? (
-              <>
-                <IconButton
-                  aria-label="Chỉnh sửa thông tin"
-                  icon={<EditIcon />}
-                  onClick={onEditOpen}
-                  colorScheme="gray"
-                />
-                <IconButton
-                  aria-label="Quản lý riêng tư"
-                  icon={<SettingsIcon />}
-                  onClick={onPrivacyOpen}
-                  colorScheme="gray"
-                />
-              </>
-            ) : (
-              <>
-                {isBlocked ? (
-                  <>
-                    <Button colorScheme="red" disabled>Đã chặn</Button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-10">
+              <p className="font-bold text-xl">{user.hoTen || "Chưa cập nhật"}</p>
+              {/* Các nút thao tác */}
+              {isOwnProfile ? (
+                <>
+                  <IconButton
+                    aria-label="Chỉnh sửa thông tin"
+                    icon={<EditIcon />}
+                    onClick={onEditOpen}
+                    colorScheme="gray"
+                  />
+                  <IconButton
+                    aria-label="Quản lý riêng tư"
+                    icon={<SettingsIcon />}
+                    onClick={onPrivacyOpen}
+                    colorScheme="gray"
+                  />
+                </>
+              ) : (
+                <>
+                  {isBlocked ? (
+                    <>
+                      <Button colorScheme="red" disabled>Đã chặn</Button>
+                      <Button colorScheme="gray" onClick={async () => {
+                        const token = localStorage.getItem("token") || "";
+                        try {
+                          await axios.delete(`http://localhost:8080/network/api/ket-ban/bo-chan/${user.id}`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          setIsBlocked(false);
+                          toast({
+                            title: 'Đã gỡ chặn người dùng!',
+                            status: 'info',
+                            duration: 500,
+                            isClosable: true,
+                            position: 'top',
+                          });
+                        } catch (err) {
+                          toast({
+                            title: err?.response?.data?.message || 'Có lỗi khi gỡ chặn!',
+                            status: 'error',
+                            duration: 500,
+                            isClosable: true,
+                            position: 'top',
+                          });
+                        }
+                      }}>Gỡ chặn</Button>
+                    </>
+                  ) : friendStatus === 'friend' ? (
+                    <>
+                      <Button colorScheme="gray" onClick={() => setUnfriendConfirmOpen(true)}>Hủy kết bạn</Button>
+                      <Button colorScheme="red" onClick={() => setBlockConfirmOpen(true)}>Chặn</Button>
+                    </>
+                  ) : receivedRequest ? (
+                    <>
+                      <Button colorScheme="blue" onClick={async () => {
+                        const token = localStorage.getItem("token") || "";
+                        try {
+                          await axios.post(`http://localhost:8080/network/api/ket-ban/chap-nhan/${receivedRequest.idLoiMoi}`, null, {
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          setFriendStatus('friend');
+                          setReceivedRequest(null);
+                          toast({
+                            title: 'Đã chấp nhận kết bạn!',
+                            status: 'success',
+                            duration: 500,
+                            isClosable: true,
+                            position: 'top',
+                          });
+                        } catch (err) {
+                          toast({
+                            title: err?.response?.data?.message || 'Có lỗi khi chấp nhận!',
+                            status: 'error',
+                            duration: 500,
+                            isClosable: true,
+                            position: 'top',
+                          });
+                        }
+                      }}>Chấp nhận</Button>
+                      <Button colorScheme="gray" onClick={async () => {
+                        const token = localStorage.getItem("token") || "";
+                        try {
+                          await axios.delete(`http://localhost:8080/network/api/ket-ban/tu-choi/${receivedRequest.idLoiMoi}`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          setFriendStatus('none');
+                          setReceivedRequest(null);
+                          toast({
+                            title: 'Đã từ chối lời mời!',
+                            status: 'info',
+                            duration: 500,
+                            isClosable: true,
+                            position: 'top',
+                          });
+                        } catch (err) {
+                          toast({
+                            title: err?.response?.data?.message || 'Có lỗi khi từ chối!',
+                            status: 'error',
+                            duration: 500,
+                            isClosable: true,
+                            position: 'top',
+                          });
+                        }
+                      }}>Từ chối</Button>
+                    </>
+                  ) : friendStatus === 'pending' ? (
                     <Button colorScheme="gray" onClick={async () => {
                       const token = localStorage.getItem("token") || "";
                       try {
-                        await axios.delete(`http://localhost:8080/network/api/ket-ban/bo-chan/${user.id}`, {
+                        // Lấy danh sách lời mời đã gửi
+                        const res = await axios.get(`http://localhost:8080/network/api/ket-ban/danh-sach/loi-moi-gui?page=0&size=20`, {
                           headers: { Authorization: `Bearer ${token}` },
                         });
-                        setIsBlocked(false);
-                        toast({
-                          title: 'Đã gỡ chặn người dùng!',
-                          status: 'info',
-                          duration: 500,
-                          isClosable: true,
-                          position: 'top',
-                        });
+                        // Tìm idLoiMoi theo idNguoiNhan
+                        const loiMoi = res.data.content.find(lm => lm.idNguoiNhan === user.id);
+                        if (loiMoi && loiMoi.idLoiMoi) {
+                          await axios.delete(`http://localhost:8080/network/api/ket-ban/huy-loi-moi/${loiMoi.idLoiMoi}`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          setFriendStatus('none');
+                          toast({
+                            title: 'Đã hủy lời mời kết bạn!',
+                            status: 'success',
+                            duration: 500,
+                            isClosable: true,
+                            position: 'top',
+                          });
+                        } else {
+                          setFriendStatus('none');
+                          toast({
+                            title: 'Lời mời đã được hủy hoặc không tồn tại!',
+                            status: 'info',
+                            duration: 500,
+                            isClosable: true,
+                            position: 'top',
+                          });
+                        }
                       } catch (err) {
                         toast({
-                          title: err?.response?.data?.message || 'Có lỗi khi gỡ chặn!',
+                          title: err?.response?.data?.message || 'Có lỗi xảy ra khi hủy lời mời!',
                           status: 'error',
                           duration: 500,
                           isClosable: true,
                           position: 'top',
                         });
                       }
-                    }}>Gỡ chặn</Button>
-                  </>
-                ) : friendStatus === 'friend' ? (
-                  <>
-                    <Button colorScheme="gray" onClick={() => setUnfriendConfirmOpen(true)}>Hủy kết bạn</Button>
-                    <Button colorScheme="red" onClick={() => setBlockConfirmOpen(true)}>Chặn</Button>
-                  </>
-                ) : receivedRequest ? (
-                  <>
+                    }}>Hủy lời mời</Button>
+                  ) : (
                     <Button colorScheme="blue" onClick={async () => {
                       const token = localStorage.getItem("token") || "";
                       try {
-                        await axios.post(`http://localhost:8080/network/api/ket-ban/chap-nhan/${receivedRequest.idLoiMoi}`, null, {
+                        await axios.post(`http://localhost:8080/network/api/ket-ban/loi-moi/${user.id}`, null, {
                           headers: { Authorization: `Bearer ${token}` },
                         });
-                        setFriendStatus('friend');
-                        setReceivedRequest(null);
+                        setFriendStatus('pending');
                         toast({
-                          title: 'Đã chấp nhận kết bạn!',
+                          title: 'Đã gửi lời mời kết bạn!',
                           status: 'success',
                           duration: 500,
                           isClosable: true,
@@ -338,109 +452,39 @@ export const ProfileUserDetails = ({ userId }) => {
                         });
                       } catch (err) {
                         toast({
-                          title: err?.response?.data?.message || 'Có lỗi khi chấp nhận!',
+                          title: err?.response?.data?.message || 'Có lỗi xảy ra khi gửi lời mời!',
                           status: 'error',
                           duration: 500,
                           isClosable: true,
                           position: 'top',
                         });
                       }
-                    }}>Chấp nhận</Button>
-                    <Button colorScheme="gray" onClick={async () => {
-                      const token = localStorage.getItem("token") || "";
-                      try {
-                        await axios.delete(`http://localhost:8080/network/api/ket-ban/tu-choi/${receivedRequest.idLoiMoi}`, {
-                          headers: { Authorization: `Bearer ${token}` },
-                        });
-                        setFriendStatus('none');
-                        setReceivedRequest(null);
-                        toast({
-                          title: 'Đã từ chối lời mời!',
-                          status: 'info',
-                          duration: 500,
-                          isClosable: true,
-                          position: 'top',
-                        });
-                      } catch (err) {
-                        toast({
-                          title: err?.response?.data?.message || 'Có lỗi khi từ chối!',
-                          status: 'error',
-                          duration: 500,
-                          isClosable: true,
-                          position: 'top',
-                        });
-                      }
-                    }}>Từ chối</Button>
-                  </>
-                ) : friendStatus === 'pending' ? (
-                  <Button colorScheme="gray" onClick={async () => {
-                    const token = localStorage.getItem("token") || "";
-                    try {
-                      // Lấy danh sách lời mời đã gửi
-                      const res = await axios.get(`http://localhost:8080/network/api/ket-ban/danh-sach/loi-moi-gui?page=0&size=20`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                      });
-                      // Tìm idLoiMoi theo idNguoiNhan
-                      const loiMoi = res.data.content.find(lm => lm.idNguoiNhan === user.id);
-                      if (loiMoi && loiMoi.idLoiMoi) {
-                        await axios.delete(`http://localhost:8080/network/api/ket-ban/huy-loi-moi/${loiMoi.idLoiMoi}`, {
-                          headers: { Authorization: `Bearer ${token}` },
-                        });
-                        setFriendStatus('none');
-                        toast({
-                          title: 'Đã hủy lời mời kết bạn!',
-                          status: 'success',
-                          duration: 500,
-                          isClosable: true,
-                          position: 'top',
-                        });
-                      } else {
-                        setFriendStatus('none');
-                        toast({
-                          title: 'Lời mời đã được hủy hoặc không tồn tại!',
-                          status: 'info',
-                          duration: 500,
-                          isClosable: true,
-                          position: 'top',
-                        });
-                      }
-                    } catch (err) {
-                      toast({
-                        title: err?.response?.data?.message || 'Có lỗi xảy ra khi hủy lời mời!',
-                        status: 'error',
-                        duration: 500,
-                        isClosable: true,
-                        position: 'top',
-                      });
-                    }
-                  }}>Hủy lời mời</Button>
-                ) : (
-                  <Button colorScheme="blue" onClick={async () => {
-                    const token = localStorage.getItem("token") || "";
-                    try {
-                      await axios.post(`http://localhost:8080/network/api/ket-ban/loi-moi/${user.id}`, null, {
-                        headers: { Authorization: `Bearer ${token}` },
-                      });
-                      setFriendStatus('pending');
-                      toast({
-                        title: 'Đã gửi lời mời kết bạn!',
-                        status: 'success',
-                        duration: 500,
-                        isClosable: true,
-                        position: 'top',
-                      });
-                    } catch (err) {
-                      toast({
-                        title: err?.response?.data?.message || 'Có lỗi xảy ra khi gửi lời mời!',
-                        status: 'error',
-                        duration: 500,
-                        isClosable: true,
-                        position: 'top',
-                      });
-                    }
-                  }}>Kết bạn</Button>
-                )}
-              </>
+                    }}>Kết bạn</Button>
+                  )}
+                </>
+              )}
+            </div>
+            {/* Bạn chung sang phải */}
+            {!isOwnProfile && mutualFriends.length > 0 && (
+              <div className="flex items-center space-x-2 ml-4">
+                <span
+                  className="text-blue-600 underline cursor-pointer text-sm"
+                  onClick={() => setShowMutualModal(true)}
+                  title="Xem danh sách bạn chung"
+                >
+                  {mutualFriends.length} bạn chung
+                </span>
+                <div className="flex">
+                  {mutualFriends.slice(0, 3).map(friend => (
+                    <img
+                      key={friend.id}
+                      src={friend.anhDaiDien || "/anhbandau.jpg"}
+                      alt={friend.hoTen}
+                      className="w-7 h-7 rounded-full border -ml-2 first:ml-0"
+                    />
+                  ))}
+                </div>
+              </div>
             )}
           </div>
           <p className="text-gray-600">{user.tieuSu || "Chưa có tiểu sử. Bạn có thể cập nhật trong phần chỉnh sửa."}</p>
@@ -641,6 +685,13 @@ export const ProfileUserDetails = ({ userId }) => {
           {/* Thông tin cá nhân chỉ hiển thị 1 lần trong grid bên dưới */}
         </div>
       )}
+      {/* Modal xem bạn chung */}
+      <MutualFriendsModal
+        isOpen={showMutualModal}
+        onClose={() => setShowMutualModal(false)}
+        targetUserId={userId}
+        targetUserName={user.hoTen}
+      />
     </div>
   );
 };

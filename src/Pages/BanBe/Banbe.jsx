@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Tabs, TabList, TabPanels, Tab, TabPanel, Avatar, Button, Box, Spinner, useToast } from "@chakra-ui/react";
+import { Tabs, TabList, TabPanels, Tab, TabPanel, Avatar, Button, Box, Spinner, useToast, Badge } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 
 const FriendCard = ({ user, actions, onClick }) => (
@@ -95,9 +95,18 @@ const FriendsPage = () => {
       <h1 className="text-3xl font-bold mb-6 text-center">Bạn bè</h1>
       <Tabs index={tab} onChange={setTab} variant="enclosed">
         <TabList>
-          <Tab>Lời mời đã gửi</Tab>
-          <Tab>Lời mời đã nhận</Tab>
-          <Tab>Bạn bè của tôi</Tab>
+          <Tab>
+            Lời mời đã gửi
+            <Badge ml={2} colorScheme="blue" borderRadius="full" px={2} fontSize="0.9em">{sent.length}</Badge>
+          </Tab>
+          <Tab>
+            Lời mời đã nhận
+            <Badge ml={2} colorScheme="red" borderRadius="full" px={2} fontSize="0.9em">{received.length}</Badge>
+          </Tab>
+          <Tab>
+            Bạn bè của tôi
+            <Badge ml={2} colorScheme="green" borderRadius="full" px={2} fontSize="0.9em">{friends.length}</Badge>
+          </Tab>
         </TabList>
         <TabPanels>
           <TabPanel>
