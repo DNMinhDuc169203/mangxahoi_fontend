@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import MutualFriendsModal from './MutualFriendsModal'
+import MutualFriendsModal from './danhsachbanchung'
 import { useNavigate } from "react-router-dom";
 
 const SuggetionCard = ({ suggestion, onUpdate }) => {

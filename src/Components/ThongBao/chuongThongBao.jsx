@@ -1,7 +1,7 @@
 import React from 'react';
 import { AiOutlineBell } from 'react-icons/ai';
-import { useNotificationContext } from '../../contexts/NotificationContext';
-import NotificationPanel from './NotificationPanel';
+import { useNotificationContext } from '../../contexts/thongBaoDongBo';
+import NotificationPanel from './hienThiThongBao';
 
 const NotificationIcon = () => {
   const { 

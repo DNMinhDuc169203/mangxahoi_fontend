@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import SuggetionCard from "./SuggetionCard";
-import SuggestionModal from "./SuggestionModal";
+import SuggetionCard from "./theGoiYbanbe";
+import SuggestionModal from "./goiYBanBeModal";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 

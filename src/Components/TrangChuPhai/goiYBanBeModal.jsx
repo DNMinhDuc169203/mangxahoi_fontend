@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import MutualFriendsModal from './MutualFriendsModal';
+import MutualFriendsModal from './danhsachbanchung';
 
 const SuggestionModal = ({ isOpen, onClose, onUpdate }) => {
   const [suggestions, setSuggestions] = useState([]);

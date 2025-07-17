@@ -14,7 +14,7 @@ import {
   markGroupMessagesAsRead,
   thuHoiTinNhan,
   themThanhVien // <-- thêm import
-} from "../../services/tinNhanService";
+} from "../../services/tinNhan";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 

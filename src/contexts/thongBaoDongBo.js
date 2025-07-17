@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNotifications } from '../hooks/useNotifications';
-import { useNotificationCount } from '../hooks/useNotificationCount';
-import { useNotificationSocket } from '../hooks/useNotificationSocket';
+import { useNotifications } from '../hooks/quanLyThongBao';
+import { useNotificationCount } from '../hooks/demThongBaoChuaDoc';
+import { useNotificationSocket } from '../hooks/thongBaoRealtime';
 
 const NotificationContext = createContext();
 

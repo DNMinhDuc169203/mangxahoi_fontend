@@ -22,7 +22,7 @@ import {
   IconButton,
 } from "@chakra-ui/react";
 import { EditIcon, SettingsIcon } from "@chakra-ui/icons";
-import MutualFriendsModal from '../TrangChuPhai/MutualFriendsModal';
+import MutualFriendsModal from '../TrangChuPhai/danhsachbanchung';
 
 export const ProfileUserDetails = ({ userId }) => {
   const [user, setUser] = useState(null);

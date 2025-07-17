@@ -6,7 +6,7 @@ import { BrowserRouter, useLocation } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
 import AdminRouter from './Admin/adminRouter';
 import Router from './Pages/Router/Router';
-import { NotificationProvider } from './contexts/NotificationContext';
+import { NotificationProvider } from './contexts/thongBaoDongBo';
 
 function AppRouter() {
   const location = useLocation();

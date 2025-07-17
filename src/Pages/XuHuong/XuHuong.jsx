@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { fetchExplorePosts } from "../../services/exploreService";
+import { fetchExplorePosts } from "../../services/xuHuong";
 import BaiDang from "../../Components/BaiViet/BaiDang";
 import { Spin, Empty, Pagination } from "antd";
 

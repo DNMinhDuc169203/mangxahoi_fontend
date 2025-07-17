@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import './NotificationModal.css';
+import './hienThiThongBao.css';
 import { AiOutlineHeart, AiOutlineComment, AiOutlineUserAdd, AiOutlineLike } from 'react-icons/ai';
 import { BiTime } from 'react-icons/bi';
-import { useNotificationContext } from '../../contexts/NotificationContext';
+import { useNotificationContext } from '../../contexts/thongBaoDongBo';
 import axios from "axios";
 import BaiDangChiTietModal from "../BinhLuan/BaiDangChiTietModal";
 
