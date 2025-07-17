@@ -51,8 +51,14 @@ const SearchComponents = ({ setIsSearchVisible }) => {
     const delayDebounce = setTimeout(() => {
       setLoading(true);
       setError(null);
+      const token = localStorage.getItem("token"); // hoặc "accessToken" nếu bạn lưu tên khác
       axios
-        .get(`http://localhost:8080/network/api/nguoi-dung/tim-kiem?tuKhoa=${encodeURIComponent(query)}`)
+        .get(
+          `http://localhost:8080/network/api/nguoi-dung/tim-kiem?tuKhoa=${encodeURIComponent(query)}`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          }
+        )
         .then((res) => {
           setUsers(res.data.content || []);
         })
@@ -71,14 +77,27 @@ const SearchComponents = ({ setIsSearchVisible }) => {
   }, [setIsSearchVisible]);
 
   // Click vào user hoặc lịch sử
-  const handleSelectUser = (user) => {
-    saveHistory({
-      id: user.id,
-      hoTen: user.hoTen,
-      anhDaiDien: user.anhDaiDien || "/anhbandau.jpg",
-    });
-    setIsSearchVisible && setIsSearchVisible(false);
-    navigate(`/profile/${user.id}`);
+  const handleSelectUser = async (user) => {
+    const token = localStorage.getItem("token");
+    try {
+      // Kiểm tra quyền truy cập profile
+      await axios.get(
+        `http://localhost:8080/network/api/nguoi-dung/${user.id}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      // Nếu thành công, cho phép truy cập profile
+      saveHistory({
+        id: user.id,
+        hoTen: user.hoTen,
+        anhDaiDien: user.anhDaiDien || "/anhbandau.jpg",
+      });
+      setIsSearchVisible && setIsSearchVisible(false);
+      navigate(`/profile/${user.id}`);
+    } catch (err) {
+      // Nếu bị chặn hoặc không truy cập được
+      removeHistory(user.id);
+      alert("Bạn không thể xem thông tin người này.");
+    }
   };
 
   return (

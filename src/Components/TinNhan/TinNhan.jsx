@@ -207,11 +207,23 @@ const TinNhan = () => {
   // WebSocket real-time chat effect
   useEffect(() => {
     const socket = new SockJS("http://localhost:8080/network/ws/chat");
+    socket.onopen = () => {
+      console.log("SockJS connection opened");
+      // Log sessionId nếu có thể lấy được
+      if (socket._transport && socket._transport.url) {
+        const match = socket._transport.url.match(/\/([^\/\?]+)\/websocket/);
+        if (match) {
+          console.log("SockJS sessionId:", match[1]);
+        }
+      }
+    };
     const stompClient = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
       onConnect: () => {
+        console.log("STOMP connected");
         stompClient.subscribe("/topic/tin-nhan", (message) => {
+          console.log("Received message on /topic/tin-nhan:", message.body);
           const msg = JSON.parse(message.body);
           // Luôn cập nhật conversations (đẩy lên đầu)
           setConversations(prev => {
@@ -255,12 +267,34 @@ const TinNhan = () => {
             }
           }
         });
+        // Lắng nghe lỗi từ backend qua WebSocket
+        stompClient.subscribe("/user/queue/errors", (message) => {
+          console.log("WS ERROR:", message.body);
+          try {
+            const error = JSON.parse(message.body);
+            if (error.type === "error" && error.message) {
+              setError(error.message + " " + Date.now());
+            }
+          } catch (e) {
+            setError("Có lỗi xảy ra khi nhận thông báo lỗi từ máy chủ. " + Date.now());
+          }
+        });
       },
+      onStompError: (frame) => {
+        console.log("STOMP error frame:", frame);
+      },
+      onWebSocketError: (event) => {
+        console.log("WebSocket error:", event);
+      },
+      onDisconnect: () => {
+        console.log("STOMP disconnected");
+      }
     });
     stompClient.activate();
     stompClientRef.current = stompClient;
     return () => {
       stompClient.deactivate();
+      console.log("STOMP deactivated");
     };
   }, [selectedId, userInfo.id, conversations]); // Thêm conversations vào phụ thuộc
 
@@ -300,13 +334,16 @@ const TinNhan = () => {
         loaiTinNhan,
         urlTepTin: urlTepTin,
       };
+      console.log("Gửi tin nhắn:", msg);
       if (stompClientRef.current && stompClientRef.current.connected) {
         stompClientRef.current.publish({
           destination: "/app/chat/gui",
           body: JSON.stringify(msg),
         });
+        console.log("Đã gửi tin nhắn qua WebSocket");
       } else {
         await guiTinNhan(msg);
+        console.log("Đã gửi tin nhắn qua REST API");
         // Nếu gửi qua API, tự cập nhật conversations
         setConversations(prev => {
           const idx = prev.findIndex(
@@ -326,8 +363,26 @@ const TinNhan = () => {
       setFile(null);
       setSending(false);
     } catch (err) {
-      setError("Gửi tin nhắn thất bại");
+      // Kiểm tra lỗi trả về từ backend
+      let msg = "Gửi tin nhắn thất bại";
+      if (
+        err.response &&
+        err.response.data &&
+        typeof err.response.data === "string" &&
+        err.response.data.includes("không còn là bạn bè")
+      ) {
+        msg = "Bạn không còn là bạn bè với người này, không thể gửi tin nhắn.";
+      } else if (
+        err.response &&
+        err.response.data &&
+        err.response.data.message &&
+        err.response.data.message.includes("không còn là bạn bè")
+      ) {
+        msg = "Bạn không còn là bạn bè với người này, không thể gửi tin nhắn.";
+      }
+      setError(msg);
       setSending(false);
+      console.log("Lỗi khi gửi tin nhắn:", err);
     }
   };
 
@@ -360,6 +415,25 @@ const TinNhan = () => {
   const handleCreateChat = async () => {
     const myId = await fetchCurrentUserId();
     const ids = [myId, ...selectedFriendIds];
+
+    // Nếu chỉ chọn 1 người (chat cá nhân)
+    if (selectedFriendIds.length === 1) {
+      // Tìm cuộc trò chuyện cá nhân đã có giữa 2 người
+      const existingConv = conversations.find(conv => {
+        // Điều kiện: loại là cá nhân, và idDoiPhuong === selectedFriendIds[0] hoặc idDoiPhuong === myId
+        return conv.loai !== "nhom" &&
+          ((conv.idDoiPhuong === selectedFriendIds[0]) || (conv.idDoiPhuong === myId && conv.idNguoiDung === selectedFriendIds[0]));
+      });
+      if (existingConv) {
+        setShowNewMessageModal(false);
+        setSelectedFriendIds([]);
+        setGroupName("");
+        setGroupImage(null);
+        setGroupImagePreview(null);
+        setSelectedId(existingConv.idCuocTroChuyen || existingConv.id);
+        return;
+      }
+    }
     console.log("Tạo nhóm với idThanhVien:", ids); 
     if (!myId || selectedFriendIds.length === 0) return;
     setCreatingChat(true);
@@ -501,11 +575,11 @@ const TinNhan = () => {
           <div className="messenger-profile-name">{userInfo.hoTen || ""}</div>
         </div>
         <div className="messenger-search">
-          <input type="text" placeholder="Search" />
+          <input type="text" placeholder="Tìm kiếm" />
         </div>
         <div className="messenger-tabs">
           <span className="active" style={{position: 'relative', display: 'inline-block'}}>
-            Messages
+            Tin nhắn
             {totalUnread > 0 && (
               <span style={{
                 position: 'absolute',
@@ -528,7 +602,6 @@ const TinNhan = () => {
               </span>
             )}
           </span>
-          <span>Requests</span>
         </div>
         <div className="messenger-list">
           {conversations.map((conv) => {
@@ -578,10 +651,10 @@ const TinNhan = () => {
       <div className="messenger-main-chat">
         {!selectedId ? (
           <div className="messenger-empty">
-            <div className="messenger-empty-title">Your messages</div>
-            <div className="messenger-empty-desc">Send a message to start a chat.</div>
+            <div className="messenger-empty-title">Tin nhắn của bạn</div>
+            <div className="messenger-empty-desc">Gửi một tin nhắn để bắt đầu cuộc trò chuyện.</div>
             <button className="messenger-btn" onClick={() => setShowNewMessageModal(true)}>
-              Send message
+              Gửi tin nhắn
             </button>
           </div>
         ) : (
@@ -615,7 +688,6 @@ const TinNhan = () => {
               )}
             </div>
             <div className="messenger-chat-body" ref={chatBodyRef}>
-              {error && <div style={{ color: "red" }}>{error}</div>}
               {messages.length === 0 ? (
                 <div className="messenger-message">Chưa có tin nhắn</div>
               ) : (
@@ -837,15 +909,24 @@ const TinNhan = () => {
                 })
               )}
             </div>
+            {/* Hiển thị lỗi gửi tin nhắn */}
+            {error && (
+              <div style={{ color: "red", margin: "8px 0", fontWeight: 500, textAlign: "center" }}>
+                {error}
+              </div>
+            )}
             <div className="messenger-chat-input">
               <span className="emoji-icon">
                 <BsEmojiSmile />
               </span>
               <input
                 type="text"
-                placeholder="Type a message..."
+                placeholder="Gõ một tin nhắn..."
                 value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
+                onChange={(e) => {
+                  setMessageInput(e.target.value);
+                  setError(""); // Reset lỗi khi gõ lại
+                }}
                 disabled={sending}
               />
               {/* Nút chọn ảnh */}
@@ -876,7 +957,7 @@ const TinNhan = () => {
                 <span style={{ marginLeft: 8, color: "#888" }}>{file.name}</span>
               )}
               <button onClick={handleSend} disabled={sending}>
-                {sending ? "Sending..." : "Send"}
+                {sending ? "Đang gửi..." : "Gửi"}
               </button>
             </div>
           </div>
@@ -886,7 +967,7 @@ const TinNhan = () => {
           <div className="modal-overlay">
             <div className="modal-content">
               <div className="modal-header">
-                <span>New message</span>
+                <span>Tin nhắn mới</span>
                 <button className="modal-close" onClick={() => setShowNewMessageModal(false)}>
                   ×
                 </button>
@@ -950,7 +1031,7 @@ const TinNhan = () => {
                   onClick={handleCreateChat}
                   disabled={creatingChat || selectedFriendIds.length === 0}
                 >
-                  {creatingChat ? "Đang tạo..." : "Chat"}
+                  {creatingChat ? "Đang tạo..." : "Nhắn"}
                 </button>
                 {error && <div style={{ color: "red", marginTop: 10 }}>{error}</div>}
               </div>

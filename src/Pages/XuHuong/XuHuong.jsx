@@ -20,7 +20,7 @@ const Explore = () => {
   }, [page]);
 
   return (
-    <div className="max-w-2xl mx-auto py-6 px-2">
+    <div className="max-w-2xl mx-auto lg:ml-40 py-6 px-2">
       <h2 className="text-2xl font-bold mb-4 text-red-600">Khám phá Hashtag Ưu Tiên</h2>
       {loading ? (
         <div className="flex justify-center py-10"><Spin size="large" /></div>

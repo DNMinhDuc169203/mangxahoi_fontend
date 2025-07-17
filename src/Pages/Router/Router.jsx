@@ -13,7 +13,7 @@ import ForgotPassword from "../QuenMatKhau/QuenMatKhau";
 import SearchComponents from "../../Components/TimKiem/TimKiem";
 import FriendsPage from "../BanBe/Banbe";
 import AdminRouter from '../../Admin/adminRouter';
-import Explore from "../Explore/Explore";
+import Explore from "../XuHuong/XuHuong";
 
 const ProfileWithId = () => {
   const { id } = useParams();

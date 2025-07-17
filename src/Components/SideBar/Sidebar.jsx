@@ -56,23 +56,23 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
       navigate(item.path);
       return;
     }
-    if (title === "Profile") {
+    if (title === "Hồ Sơ") {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       if (user && user.id) {
         navigate(`/profile/${user.id}`);
       }
       return;
     }
-    else if (title === "Home") {
+    else if (title === "Trang Chủ") {
       navigate("/");
     }
-    else if (title === "Create") {
+    else if (title === "Tạo") {
       onOpen();
     }
-    else if (title === "Notification") {
+    else if (title === "Thông Báo") {
       onNotificationOpen();
     }
-    if (title === "Search") {
+    if (title === "Tìm Kiếm") {
       setIsSearchVisible(true);
     }
     else {
@@ -82,7 +82,7 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
 
   return (
     <div className="sticky top-0 h-[100vh] flex">
-      <div className={`flex flex-col justify-between h-full ${activeTab === "Search" ? "px-2" : "px-10"}`}>
+      <div className={`flex flex-col justify-between h-full ${activeTab === "Search" ? "px-2" : "px-10"} w-[250px]`}>
         {<div>
           {activeTab !== "Search" && <div className="pt-10">
             <img
@@ -93,15 +93,15 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
           </div>}
           <div className="mt-10">
             {menu.map((item) => (
-              <div key={item.title} onClick={() => handleTabClick(item.title)} className="flex items-center mb-5 cursor-pointer text-lg relative">
+              <div key={item.title} onClick={() => handleTabClick(item.title)} className="flex items-center mb-5 cursor-pointer text-lg relative whitespace-nowrap gap-x-2">
                 {activeTab === item.title ? item.activeIcon : item.icon}
                 {activeTab !== "Search" && <p className={`${activeTab === item.title ? "font-bold text-red-500" : "font-semyibold"}`}>{item.title}</p>}
-                {item.title === "Message" && unreadMessageCount > 0 && (
+                {item.title === "Tin Nhắn" && unreadMessageCount > 0 && (
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-badge">
                     {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
                   </div>
                 )}
-                {item.title === "Notification" && unreadCount > 0 && (
+                {item.title === "Thông Báo" && unreadCount > 0 && (
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-badge">
                     {unreadCount}
                   </div>
@@ -112,7 +112,7 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
         </div>}
         <div className="flex items-center cursor-pointer pb-10">
           <IoReorderThreeOutline className="text-2xl" />
-          {activeTab !== "Search" && <p className="ml-5">More</p>}
+          {activeTab !== "Search" && <p className="ml-5">Cài Đặt</p>}
         </div>
       </div>
       <CreatePostModal onClose={onClose} isOpen={isOpen} />

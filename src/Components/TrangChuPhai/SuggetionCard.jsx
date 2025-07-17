@@ -1,13 +1,39 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import MutualFriendsModal from './MutualFriendsModal'
 import { useNavigate } from "react-router-dom";
 
 const SuggetionCard = ({ suggestion, onUpdate }) => {
   const [isLoading, setIsLoading] = useState(false)
-  const [isSent, setIsSent] = useState(false)
+  const [isSent, setIsSent] = useState(!!suggestion.daGuiLoiMoi)
   const [showMutualFriends, setShowMutualFriends] = useState(false)
+  const [friendRequestId, setFriendRequestId] = useState(suggestion.idLoiMoi || null);
   const navigate = useNavigate();
+  const [mutualCount, setMutualCount] = useState(null);
+
+  useEffect(() => {
+    if (suggestion?.nguoiTrongGoiY?.id) {
+      fetchMutualCount(suggestion.nguoiTrongGoiY.id);
+    }
+  }, [suggestion?.nguoiTrongGoiY?.id]);
+
+  const fetchMutualCount = async (targetUserId) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const res = await axios.get(
+        `http://localhost:8080/network/api/ket-ban/dem/ban-be-chung/${targetUserId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setMutualCount(res.data.count);
+    } catch (err) {
+      setMutualCount(0);
+    }
+  };
 
   const handleSendFriendRequest = async () => {
     const token = localStorage.getItem("token")
@@ -15,7 +41,7 @@ const SuggetionCard = ({ suggestion, onUpdate }) => {
 
     setIsLoading(true)
     try {
-      await axios.post(
+      const res = await axios.post(
         `http://localhost:8080/network/api/ket-ban/loi-moi/${suggestion.nguoiTrongGoiY.id}`,
         {},
         {
@@ -25,10 +51,11 @@ const SuggetionCard = ({ suggestion, onUpdate }) => {
         }
       )
       setIsSent(true)
-      // Gọi callback để cập nhật danh sách nếu cần
-      if (onUpdate) {
-        onUpdate()
-      }
+      setFriendRequestId(res.data.idLoiMoi || res.data.id || null); // Lưu lại id lời mời nếu backend trả về
+      // KHÔNG gọi onUpdate ở đây để giữ trạng thái local
+      // if (onUpdate) {
+      //   onUpdate()
+      // }
     } catch (err) {
       console.error("Lỗi khi gửi lời mời kết bạn:", err)
       alert("Có lỗi xảy ra khi gửi lời mời kết bạn")
@@ -37,6 +64,29 @@ const SuggetionCard = ({ suggestion, onUpdate }) => {
     }
   }
 
+  const handleCancelFriendRequest = async () => {
+    const token = localStorage.getItem("token");
+    if (!token || !friendRequestId) return;
+    setIsLoading(true);
+    try {
+      await axios.delete(
+        `http://localhost:8080/network/api/ket-ban/huy-loi-moi/${friendRequestId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setIsSent(false);
+      setFriendRequestId(null);
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      alert("Có lỗi xảy ra khi hủy lời mời");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getMutualFriendsText = () => {
     if (!suggestion.lyDoGoiY) return "0 bạn chung"
     
@@ -44,7 +94,7 @@ const SuggetionCard = ({ suggestion, onUpdate }) => {
       const lyDo = JSON.parse(suggestion.lyDoGoiY)
       const banChung = lyDo.ban_chung || 0
       
-      if (banChung === 0) return "Không có bạn chung"
+      if (banChung === 0) return "0 có bạn chung"
       if (banChung === 1) return "1 bạn chung"
       return `${banChung} bạn chung`
     } catch (e) {
@@ -110,16 +160,16 @@ const SuggetionCard = ({ suggestion, onUpdate }) => {
               >
                 {suggestion?.nguoiTrongGoiY?.email}
               </p>
-              <button
-                onClick={() => mutualFriendsCount > 0 && setShowMutualFriends(true)}
-                className={`text-xs ${
-                  mutualFriendsCount > 0 
-                    ? 'text-blue-600 hover:text-blue-800 cursor-pointer underline' 
-                    : 'text-gray-600 cursor-default'
-                }`}
-              >
-                {getMutualFriendsText()}
-              </button>
+              <p className='text-xs text-blue-600 mt-1'>
+                {mutualCount === null
+                  ? "Đang tải bạn chung..."
+                  : mutualCount === 0
+                    ? "0 có bạn chung"
+                    : mutualCount === 1
+                      ? "1 bạn chung"
+                      : `${mutualCount} bạn chung`
+                }
+              </p>
               {getSuggestionReason() && (
                 <p className='text-xs text-gray-500 mt-1'>
                   {getSuggestionReason()}
@@ -129,9 +179,17 @@ const SuggetionCard = ({ suggestion, onUpdate }) => {
           </div>
           <div className="flex flex-col items-end">
             {isSent ? (
-              <span className="text-green-600 text-xs font-medium">
-                Đã gửi
-              </span>
+              <button
+                onClick={handleCancelFriendRequest}
+                disabled={isLoading}
+                className={`text-sm font-medium px-3 py-1 rounded-full transition-colors ${
+                  isLoading 
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-red-600 text-white hover:bg-red-700'
+                }`}
+              >
+                {isLoading ? 'Đang hủy...' : 'Hủy lời mời'}
+              </button>
             ) : (
               <button
                 onClick={handleSendFriendRequest}
@@ -145,11 +203,11 @@ const SuggetionCard = ({ suggestion, onUpdate }) => {
                 {isLoading ? 'Đang gửi...' : 'Kết bạn'}
               </button>
             )}
-            {suggestion.diemGoiY && (
+            {/* {suggestion.diemGoiY && (
               <span className="text-xs text-gray-400 mt-1">
                 Điểm: {suggestion.diemGoiY}
               </span>
-            )}
+            )} */}
           </div>
         </div>
       </div>

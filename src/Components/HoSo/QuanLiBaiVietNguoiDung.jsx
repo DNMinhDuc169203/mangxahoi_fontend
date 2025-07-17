@@ -7,19 +7,18 @@ import axios from "axios";
 import PostDetailModal from "../BinhLuan/BaiDangChiTietModal";
 
 const ReqUserPostPart = ({ userId }) => {
-  const [activeTab, setActiveTab] = useState("Post");
+  const [activeTab, setActiveTab] = useState("Bài viết");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalPost, setModalPost] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const tabs = [
-    { tab: "Post", icon: <AiOutlineTable></AiOutlineTable> },
-    { tab: "Saved", icon: <BiBookmark /> },
-    { tab: "Tagged", icon: <AiOutlineUser></AiOutlineUser> },
+    { tab: "Bài viết", icon: <AiOutlineTable></AiOutlineTable> },
+    { tab: "Đã lưu", icon: <BiBookmark /> },
   ];
 
   useEffect(() => {
-    if (activeTab === "Post") {
+    if (activeTab === "Bài viết") {
       const fetchPosts = async () => {
         setLoading(true);
         try {
@@ -37,7 +36,7 @@ const ReqUserPostPart = ({ userId }) => {
         }
       };
       fetchPosts();
-    } else if (activeTab === "Saved") {
+    } else if (activeTab === "Đã lưu") {
       const fetchSaved = async () => {
         setLoading(true);
         try {
@@ -96,7 +95,7 @@ const ReqUserPostPart = ({ userId }) => {
         ))}
       </div>
       <div>
-        {activeTab === "Post" && (
+        {activeTab === "Bài viết" && (
           <div className="flex flex-wrap">
             {loading ? (
               <div>Đang tải bài viết...</div>
@@ -109,7 +108,7 @@ const ReqUserPostPart = ({ userId }) => {
             )}
           </div>
         )}
-        {activeTab === "Saved" && (
+        {activeTab === "Đã lưu" && (
           <div className="flex flex-wrap">
             {loading ? (
               <div>Đang tải bài viết đã lưu...</div>

@@ -8,12 +8,60 @@ const SuggestionModal = ({ isOpen, onClose, onUpdate }) => {
   const [sendingRequests, setSendingRequests] = useState(new Set());
   const [showMutualFriends, setShowMutualFriends] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [mutualCounts, setMutualCounts] = useState({});
+  const [sentRequests, setSentRequests] = useState({}); // { [userId]: { isSent, friendRequestId } }
 
   useEffect(() => {
     if (isOpen) {
       fetchAllSuggestions();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    // Khi suggestions thay đổi, fetch số bạn chung cho từng user
+    if (suggestions.length > 0) {
+      suggestions.forEach(suggestion => {
+        const userId = suggestion?.nguoiTrongGoiY?.id;
+        if (userId && mutualCounts[userId] === undefined) {
+          fetchMutualCount(userId);
+        }
+      });
+    }
+    // eslint-disable-next-line
+  }, [suggestions]);
+
+  useEffect(() => {
+    if (suggestions.length > 0) {
+      // Khởi tạo trạng thái gửi lời mời từ backend
+      const initialSent = {};
+      suggestions.forEach(suggestion => {
+        initialSent[suggestion.nguoiTrongGoiY.id] = {
+          isSent: !!suggestion.daGuiLoiMoi,
+          friendRequestId: suggestion.idLoiMoi || null
+        };
+      });
+      setSentRequests(initialSent);
+    }
+    // eslint-disable-next-line
+  }, [suggestions]);
+
+  const fetchMutualCount = async (targetUserId) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const res = await axios.get(
+        `http://localhost:8080/network/api/ket-ban/dem/ban-be-chung/${targetUserId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setMutualCounts(prev => ({ ...prev, [targetUserId]: res.data.count }));
+    } catch (err) {
+      setMutualCounts(prev => ({ ...prev, [targetUserId]: 0 }));
+    }
+  };
 
   const fetchAllSuggestions = async () => {
     const token = localStorage.getItem("token");
@@ -41,11 +89,9 @@ const SuggestionModal = ({ isOpen, onClose, onUpdate }) => {
   const handleSendFriendRequest = async (userId) => {
     const token = localStorage.getItem("token");
     if (!token) return;
-
     setSendingRequests(prev => new Set(prev).add(userId));
-    
     try {
-      await axios.post(
+      const res = await axios.post(
         `http://localhost:8080/network/api/ket-ban/loi-moi/${userId}`,
         {},
         {
@@ -54,17 +100,47 @@ const SuggestionModal = ({ isOpen, onClose, onUpdate }) => {
           },
         }
       );
-      
-      // Cập nhật danh sách để loại bỏ người dùng đã gửi lời mời
-      setSuggestions(prev => prev.filter(s => s.nguoiTrongGoiY.id !== userId));
-      
-      // Gọi callback để cập nhật danh sách chính
-      if (onUpdate) {
-        onUpdate();
-      }
+      setSentRequests(prev => ({
+        ...prev,
+        [userId]: {
+          isSent: true,
+          friendRequestId: res.data.idLoiMoi || res.data.id || null
+        }
+      }));
     } catch (err) {
-      console.error("Lỗi khi gửi lời mời kết bạn:", err);
       alert("Có lỗi xảy ra khi gửi lời mời kết bạn");
+    } finally {
+      setSendingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleCancelFriendRequest = async (userId) => {
+    const token = localStorage.getItem("token");
+    const friendRequestId = sentRequests[userId]?.friendRequestId;
+    if (!token || !friendRequestId) return;
+    setSendingRequests(prev => new Set(prev).add(userId));
+    try {
+      await axios.delete(
+        `http://localhost:8080/network/api/ket-ban/huy-loi-moi/${friendRequestId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setSentRequests(prev => ({
+        ...prev,
+        [userId]: {
+          isSent: false,
+          friendRequestId: null
+        }
+      }));
+    } catch (err) {
+      alert("Có lỗi xảy ra khi hủy lời mời");
     } finally {
       setSendingRequests(prev => {
         const newSet = new Set(prev);
@@ -152,7 +228,10 @@ const SuggestionModal = ({ isOpen, onClose, onUpdate }) => {
           ) : suggestions.length > 0 ? (
             <div className="space-y-4">
               {suggestions.map((suggestion) => {
-                const mutualFriendsCount = getMutualFriendsCount(suggestion);
+                const userId = suggestion?.nguoiTrongGoiY?.id;
+                const mutualCount = userId ? mutualCounts[userId] : null;
+                const isSent = sentRequests[userId]?.isSent;
+                const isLoadingBtn = sendingRequests.has(userId);
                 return (
                   <div key={suggestion.id} className="flex justify-between items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="flex items-center flex-1">
@@ -165,39 +244,53 @@ const SuggestionModal = ({ isOpen, onClose, onUpdate }) => {
                         <p className="font-semibold text-gray-900">
                           {suggestion?.nguoiTrongGoiY?.hoTen || "Username"}
                         </p>
-                        <button
-                          onClick={() => mutualFriendsCount > 0 && handleShowMutualFriends(suggestion.nguoiTrongGoiY)}
-                          className={`text-sm ${
-                            mutualFriendsCount > 0 
-                              ? 'text-blue-600 hover:text-blue-800 cursor-pointer underline' 
-                              : 'text-gray-600 cursor-default'
-                          }`}
-                        >
-                          {getMutualFriendsText(suggestion)}
-                        </button>
+                        <p className='text-sm text-blue-600 mt-1'>
+                          {mutualCount === null || mutualCount === undefined
+                            ? "Đang tải bạn chung..."
+                            : mutualCount === 0
+                              ? "0 bạn chung"
+                              : mutualCount === 1
+                                ? "1 bạn chung"
+                                : `${mutualCount} bạn chung`
+                          }
+                        </p>
                         {getSuggestionReason(suggestion) && (
                           <p className="text-xs text-gray-500 mt-1">
                             {getSuggestionReason(suggestion)}
                           </p>
                         )}
-                        {suggestion.diemGoiY && (
+                        {/* {suggestion.diemGoiY && (
                           <p className="text-xs text-blue-600 mt-1">
                             Điểm gợi ý: {suggestion.diemGoiY}
                           </p>
-                        )}
+                        )} */}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleSendFriendRequest(suggestion.nguoiTrongGoiY.id)}
-                      disabled={sendingRequests.has(suggestion.nguoiTrongGoiY.id)}
-                      className={`ml-4 px-4 py-2 rounded-lg font-medium transition-colors ${
-                        sendingRequests.has(suggestion.nguoiTrongGoiY.id)
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      {sendingRequests.has(suggestion.nguoiTrongGoiY.id) ? 'Đang gửi...' : 'Kết bạn'}
-                    </button>
+                    {isSent ? (
+                      <button
+                        onClick={() => handleCancelFriendRequest(userId)}
+                        disabled={isLoadingBtn}
+                        className={`ml-4 px-4 py-2 rounded-lg font-medium transition-colors ${
+                          isLoadingBtn
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-red-600 text-white hover:bg-red-700'
+                        }`}
+                      >
+                        {isLoadingBtn ? 'Đang hủy...' : 'Hủy lời mời'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSendFriendRequest(userId)}
+                        disabled={isLoadingBtn}
+                        className={`ml-4 px-4 py-2 rounded-lg font-medium transition-colors ${
+                          isLoadingBtn
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        {isLoadingBtn ? 'Đang gửi...' : 'Kết bạn'}
+                      </button>
+                    )}
                   </div>
                 );
               })}
