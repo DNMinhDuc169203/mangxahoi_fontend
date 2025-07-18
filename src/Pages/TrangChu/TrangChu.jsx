@@ -129,8 +129,8 @@ const HomePage = () => {
   };
 
   const handlePostUpdated = (updatedPost) => {
-    setPosts(prevPosts => prevPosts.map(p => p.id === updatedPost.id ? updatedPost : p));
-    setModalPost(prev => (prev && prev.id === updatedPost.id ? updatedPost : prev));
+    setPosts(prevPosts => prevPosts.map(p => p.id == updatedPost.id ? updatedPost : p));
+    setModalPost(prev => (prev && prev.id == updatedPost.id ? updatedPost : prev));
   };
 
   const refreshSavedPosts = async () => {
@@ -153,7 +153,7 @@ const HomePage = () => {
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Chính sách sử dụng TopTrend</ModalHeader>
-          <ModalBody>
+          <ModalBody style={{ maxHeight: '60vh', overflowY: 'auto' }}>
             {policy ? (
               <>
                 <div className="font-bold mb-2">{policy.tieuDe}</div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../../Components/SideBar/Sidebar";
 import HomePage from "../TrangChu/TrangChu";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Route, Routes, useLocation, Navigate } from "react-router-dom";
 import Profile from "../HoSo/HoSo";
 import { useParams } from "react-router-dom";
 import TinNhan from "../../Components/TinNhan/TinNhan";
@@ -39,11 +39,18 @@ const Backdrop = ({ onClick }) => (
 const Router = () => {
   const location = useLocation();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const token = localStorage.getItem("token");
 
   // Đóng search khi chuyển route
   useEffect(() => {
     setIsSearchVisible(false);
   }, [location.pathname]);
+
+  // Nếu chưa đăng nhập và không phải các trang auth thì chuyển hướng về /login
+  const authPaths = ["/login", "/register", "/verify", "/forgot-password"];
+  if (!token && !authPaths.includes(location.pathname)) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (location.pathname === "/login") {
     return <Login />;

@@ -389,7 +389,7 @@ const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdat
               onClick={handleOpenDetailModal}
               className="text-xl hover:opacity-50 cursor-pointer"
             />
-            <RiSendPlaneLine className="text-xl hover:opacity-50 cursor-pointer" />
+            {/* <RiSendPlaneLine className="text-xl hover:opacity-50 cursor-pointer" /> */}
           </div>
           <div className="cursor-pointer">
             {isSaved ? (
@@ -453,6 +453,8 @@ const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdat
           setLikes(likeCount);
           if (onLikePost) onLikePost(post.id, liked);
         }}
+        onPostUpdated={handlePostUpdated}
+        onPostDeleted={onPostDeleted}
       />
 
       <DanhSachNguoiThichModal

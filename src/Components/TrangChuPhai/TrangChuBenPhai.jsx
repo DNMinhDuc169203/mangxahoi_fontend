@@ -81,8 +81,16 @@ const HomeRight = () => {
             <p className="text-sm text-gray-500 cursor-pointer" onClick={() => user?.id && navigate(`/profile/${user.id}`)}>{user?.email || "email@example.com"}</p>
           </div>
         </div>
-        <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-          Chuyển đổi
+        <button className="text-blue-600 hover:text-blue-800 text-sm font-medium" onClick={() => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("email");
+          localStorage.removeItem("search_history");
+          localStorage.removeItem("hasSeenPolicy");
+          localStorage.removeItem("showPolicyModal");
+          navigate("/login");
+        }}>
+          Đăng xuất
         </button>
       </div>
       

@@ -5,6 +5,12 @@ import { FaComment, FaRegSmile, FaUserFriends } from 'react-icons/fa';
 import { BsThreeDots } from 'react-icons/bs';
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import ModalTuyChonBaiViet from '../BaiViet/ModalTuyChonBaiViet';
+import ModalBaoCaoBaiViet from '../BaiViet/ModalBaoCaoBaiViet';
+import ModalChinhSuaBaiViet from '../BaiViet/ModalChinhSuaBaiViet';
+import ModalChonQuyenRiengTu from '../BaiViet/ModalChonQuyenRiengTu';
+import EmojiPicker from 'emoji-picker-react';
+import { useToast } from '@chakra-ui/react';
 
 function formatTimeAgo(dateString) {
   const now = new Date();
@@ -26,7 +32,7 @@ function formatTimeAgo(dateString) {
   }
 }
 
-const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged }) => {
+const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged, onPostDeleted, onPostUpdated }) => {
   const [currentImg, setCurrentImg] = useState(0);
   const [comments, setComments] = useState([]);
   const [totalComments, setTotalComments] = useState(0);
@@ -35,6 +41,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
   const [showAll, setShowAll] = useState(false);
   const maxShow = 2;
   const shownComments = showAll ? comments : comments.slice(0, maxShow);
+  const [showEmoji, setShowEmoji] = useState(false);
 
   // Lấy token từ localStorage (hoặc context nếu bạn dùng context)
   const token = localStorage.getItem('token');
@@ -55,11 +62,22 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editContent, setEditContent] = useState("");
   const [menuOpenId, setMenuOpenId] = useState(null);
+  const [isOptionModalOpen, setIsOptionModalOpen] = useState(false);
+  const [isBaoCaoModalOpen, setIsBaoCaoModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Thay vì chỉ dùng prop post, tạo state cục bộ cho post để cập nhật ngay khi chỉnh sửa
+  const [localPost, setLocalPost] = useState(post);
+  useEffect(() => { setLocalPost(post); }, [post]);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user.id;
+  const isOwnPost = post?.idNguoiDung === user.id;
 
   const navigate = useNavigate();
+  const toast = useToast();
 
   React.useEffect(() => {
     setCurrentImg(0);
@@ -743,6 +761,63 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
     );
   };
 
+  // Thêm các hàm xử lý tuỳ chọn bài viết (có thể tuỳ chỉnh lại logic nếu cần)
+  const handleEdit = () => {
+    setIsOptionModalOpen(false);
+    setIsEditModalOpen(true);
+  };
+  const handlePrivacy = () => {
+    setIsOptionModalOpen(false);
+    setIsPrivacyModalOpen(true);
+  };
+  const handleDelete = async () => {
+    setIsOptionModalOpen(false);
+    if (!window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) return;
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:8080/network/api/bai-viet/${post.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({
+        title: 'Đã xóa bài viết thành công!',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+        position: 'top',
+      });
+      if (typeof onPostDeleted === 'function') onPostDeleted(post.id);
+      if (typeof onClose === 'function') onClose();
+    } catch (err) {
+      alert('Xóa bài viết thất bại!');
+    }
+    setIsDeleting(false);
+  };
+  const handleReport = () => {
+    setIsOptionModalOpen(false);
+    setIsBaoCaoModalOpen(true);
+  };
+
+  // Thêm hàm onPostUpdated mặc định nếu không được truyền vào props
+  // XÓA dòng này:
+  // const onPostUpdated = () => {};
+
+  const handlePostUpdatedLocal = (updated) => {
+    setIsEditModalOpen(false);
+    setIsPrivacyModalOpen(false);
+    if (updated && updated.id === localPost.id) {
+      setLocalPost(updated);
+    }
+    if (typeof onPostUpdated === 'function') {
+      onPostUpdated(updated);
+    }
+  };
+
+  const handleEmojiClick = (emojiData) => {
+    setNewComment(prev => prev + emojiData.emoji);
+    setShowEmoji(false);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="4xl" isCentered>
       <ModalOverlay />
@@ -756,7 +831,38 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
           variant="ghost"
           size="md"
           aria-label="Tùy chọn"
-          onClick={onClose}
+          onClick={e => {
+            e.stopPropagation();
+            setIsOptionModalOpen(true);
+          }}
+          zIndex={10}
+        />
+        <ModalTuyChonBaiViet
+          isOpen={isOptionModalOpen}
+          onClose={() => setIsOptionModalOpen(false)}
+          isOwnPost={isOwnPost}
+          onEdit={handleEdit}
+          onPrivacy={handlePrivacy}
+          onDelete={handleDelete}
+          onReport={handleReport}
+        />
+        <ModalChinhSuaBaiViet
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          post={localPost}
+          onPostUpdated={handlePostUpdatedLocal}
+        />
+        <ModalChonQuyenRiengTu
+          isOpen={isPrivacyModalOpen}
+          onClose={() => setIsPrivacyModalOpen(false)}
+          post={localPost}
+          onPostUpdated={handlePostUpdatedLocal}
+        />
+        <ModalBaoCaoBaiViet
+          isOpen={isBaoCaoModalOpen}
+          onClose={() => setIsBaoCaoModalOpen(false)}
+          postId={localPost?.id}
+          postTitle={localPost?.noiDung}
         />
         <ModalBody p={0} display="flex" position="relative">
           {/* Ảnh lớn bên trái */}
@@ -821,21 +927,21 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
             <Flex align="center" mb={4} gap={3} justify="space-between">
               <Flex direction="column" align="flex-start" gap={0}>
                 <Flex align="center" gap={2}>
-                  <Avatar size="md" src={post.anhDaiDienNguoiDung || "/anhbandau.jpg"} className="cursor-pointer" onClick={() => post.idNguoiDung && navigate(`/profile/${post.idNguoiDung}`)} />
-                  <Text fontWeight="bold" className="cursor-pointer" onClick={() => post.idNguoiDung && navigate(`/profile/${post.idNguoiDung}`)}>{post.hoTenNguoiDung}</Text>
-                  {renderCheDo(post.cheDoRiengTu)}
+                  <Avatar size="md" src={localPost?.anhDaiDienNguoiDung || "/anhbandau.jpg"} className="cursor-pointer" onClick={() => localPost?.idNguoiDung && navigate(`/profile/${localPost.idNguoiDung}`)} />
+                  <Text fontWeight="bold" className="cursor-pointer" onClick={() => localPost?.idNguoiDung && navigate(`/profile/${localPost.idNguoiDung}`)}>{localPost?.hoTenNguoiDung}</Text>
+                  {renderCheDo(localPost?.cheDoRiengTu)}
                   <Text fontSize="sm" color="gray.500" ml={2}>
-                    {post.ngayTao ? formatTimeAgo(post.ngayTao) : ""}
+                    {localPost?.ngayTao ? formatTimeAgo(localPost.ngayTao) : ""}
                   </Text>
                 </Flex>
               </Flex>
               {/* Nút ba chấm đã có ở góc phải */}
             </Flex>
             <VStack align="start" spacing={4} flex={1} overflowY="auto" maxH="320px">
-              <Text>{post.noiDung}</Text>
-              {post.hashtags && post.hashtags.length > 0 && (
+              <Text>{localPost?.noiDung}</Text>
+              {localPost?.hashtags && localPost.hashtags.length > 0 && (
                 <Flex gap={2} flexWrap="wrap" mt={1}>
-                  {post.hashtags.map((tag, idx) => (
+                  {localPost.hashtags.map((tag, idx) => (
                     <Box
                       key={idx}
                       px={2}
@@ -883,7 +989,7 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
                         key={c.id || idx}
                         comment={c}
                         level={0}
-                        postId={post.id}
+                        postId={localPost.id}
                         rootCommentId={c.id}
                         token={token}
                         fetchReplies={fetchReplies}
@@ -911,8 +1017,13 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged 
             </VStack>
             {/* Khung nhập bình luận */}
             <Box borderTop="1px solid #eee" pt={3} bg="white" w="full" style={{ marginTop: 0 }}>
-              <Flex align="center" gap={2}>
-                <Icon as={FaRegSmile} boxSize={6} color="gray.500" />
+              <Flex align="center" gap={2} position="relative">
+                <Icon as={FaRegSmile} boxSize={6} color="gray.500" style={{ cursor: 'pointer' }} onClick={() => setShowEmoji(v => !v)} />
+                {showEmoji && (
+                  <Box position="absolute" bottom="40px" left={0} zIndex={30}>
+                    <EmojiPicker onEmojiClick={handleEmojiClick} theme="light" />
+                  </Box>
+                )}
                 <Input
                   variant="unstyled"
                   placeholder="Bình luận..."

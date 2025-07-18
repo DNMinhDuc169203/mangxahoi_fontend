@@ -23,6 +23,25 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Kiểm tra tuổi >= 16
+    if (form.ngaySinh) {
+      const today = new Date();
+      const dob = new Date(form.ngaySinh);
+      const age = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      const isBirthdayPassed = m > 0 || (m === 0 && today.getDate() >= dob.getDate());
+      const realAge = isBirthdayPassed ? age : age - 1;
+      if (realAge < 16) {
+        toast({
+          title: "Bạn phải đủ 16 tuổi trở lên để đăng ký!",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        });
+        return;
+      }
+    }
     if (form.matKhau !== form.xacNhanMatKhau) {
       toast({
         title: "Mật khẩu xác nhận không khớp!",

@@ -15,6 +15,7 @@ import { GrEmoji } from "react-icons/gr"
 import { GoLocation } from "react-icons/go"
 import { AiOutlineClose } from "react-icons/ai";
 import axios from 'axios';
+import EmojiPicker from 'emoji-picker-react';
 
 const CreatePostModal = ({ onClose, isOpen }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -24,6 +25,7 @@ const CreatePostModal = ({ onClose, isOpen }) => {
   const [hashtags, setHashtags] = useState("");
   const [user, setUser] = useState(null);
   const toast = useToast();
+  const [showEmoji, setShowEmoji] = useState(false);
 
   const handleDrop = (event) => {
     event.preventDefault();
@@ -105,6 +107,11 @@ const CreatePostModal = ({ onClose, isOpen }) => {
     }
   };
 
+  const handleEmojiClick = (emojiData) => {
+    setCaption(prev => prev + emojiData.emoji);
+    setShowEmoji(false);
+  };
+
   useEffect(() => {
     if (!isOpen) return;
     const fetchUser = async () => {
@@ -129,7 +136,7 @@ const CreatePostModal = ({ onClose, isOpen }) => {
         <ModalOverlay />
         <ModalContent>
           <div className="flex justify-between py-1 px-10 items-center">
-            <p>Create New Post</p>
+            <p>Tạo bài viết</p>
             <Button
               className=""
               variant={"ghost"}
@@ -155,10 +162,10 @@ const CreatePostModal = ({ onClose, isOpen }) => {
                 >
                   <div>
                     <FaPhotoVideo className="text-3xl" />
-                    <p>Drag Photos or Video here</p>
+                    <p>Kéo ảnh hoặc video vào đây</p>
                   </div>
                   <label htmlFor="file-upload" className="custom-file-upload">
-                    Select From Computer
+                    Chọn ảnh
                   </label>
                   <input
                     className="fileInput"
@@ -220,12 +227,20 @@ const CreatePostModal = ({ onClose, isOpen }) => {
                 </div>
                 <div className="flex-1 flex flex-col mt-4">
                   <textarea
-                    placeholder="Write a caption"
+                    placeholder="Nhập nội dung"
                     className="captionInput flex-1"
                     name="caption"
                     rows="8"
                     onChange={handleCaptionChange}
+                    value={caption}
                   ></textarea>
+                  {showEmoji && (
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <div style={{ position: 'absolute', left: 0, zIndex: 30 }}>
+                        <EmojiPicker onEmojiClick={handleEmojiClick} theme="light" />
+                      </div>
+                    </div>
+                  )}
                   <input
                     type="text"
                     className="hashtagInput mt-2 px-2 py-1 border rounded"
@@ -233,8 +248,15 @@ const CreatePostModal = ({ onClose, isOpen }) => {
                     value={hashtags}
                     onChange={e => setHashtags(e.target.value)}
                   />
-                  <div className="flex justify-between px-2 mt-2 mb-1">
-                    <GrEmoji />
+                  <div className="flex justify-between px-2 mt-2 mb-1" style={{ position: 'relative' }}>
+                    <span style={{ position: 'relative' }}>
+                      <GrEmoji style={{ cursor: 'pointer' }} onClick={() => setShowEmoji(v => !v)} />
+                      {showEmoji && (
+                        <div style={{ position: 'absolute', bottom: '30px', left: 0, zIndex: 20 }}>
+                          <EmojiPicker onEmojiClick={handleEmojiClick} theme="light" />
+                        </div>
+                      )}
+                    </span>
                     <p className="opacity-70">{caption?.length} /2000</p>
                   </div>
                 </div>
