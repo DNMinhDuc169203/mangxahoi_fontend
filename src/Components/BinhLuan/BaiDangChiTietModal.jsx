@@ -821,7 +821,11 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged,
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="4xl" isCentered>
       <ModalOverlay />
-      <ModalContent maxW="900px" minH="500px" position="relative">
+      <ModalContent 
+        maxW={["98vw", "98vw", "900px"]} 
+        minH={["auto", "auto", "500px"]} 
+        position="relative"
+      >
         {/* Nút ba chấm thay cho nút X */}
         <IconButton
           icon={<BsThreeDots />}
@@ -864,12 +868,25 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged,
           postId={localPost?.id}
           postTitle={localPost?.noiDung}
         />
-        <ModalBody p={0} display="flex" position="relative">
+        <ModalBody 
+          p={0} 
+          display="flex" 
+          flexDirection={["column", "column", "row"]} 
+          position="relative"
+        >
           {/* Ảnh lớn bên trái */}
-          <Box flex="1" bg="gray" display="flex" alignItems="center" justifyContent="center" position="relative">
+          <Box 
+            flex={["none", "none", "1"]}
+            w={["100%", "100%", "50%"]}
+            minH={["200px", "300px", "auto"]}
+            display="flex" 
+            alignItems="center" 
+            justifyContent="center" 
+            position="relative"
+          >
             {hasImages ? (
               <>
-                <Image src={images[currentImg]} alt="Ảnh bài viết" maxH="500px" maxW="100%" objectFit="contain" />
+                <Image src={images[currentImg]} alt="Ảnh bài viết" maxH={["200px", "300px", "500px"]} maxW="100%" objectFit="contain" />
                 {/* Carousel dots */}
                 <HStack position="absolute" bottom={3} left="50%" transform="translateX(-50%)" spacing={1} zIndex={2}>
                   {images.map((_, idx) => (
@@ -923,7 +940,15 @@ const PostDetailModal = ({ post, isOpen, onClose, onCommentAdded, onLikeChanged,
             )}
           </Box>
           {/* Thông tin bên phải */}
-          <Box flex="1.2" p={6} minW="350px" display="flex" flexDirection="column" position="relative">
+          <Box 
+            flex={["none", "none", "1.2"]}
+            w={["100%", "100%", "50%"]}
+            p={[2, 4, 6]}
+            minW={["auto", "auto", "350px"]}
+            display="flex" 
+            flexDirection="column" 
+            position="relative"
+          >
             <Flex align="center" mb={4} gap={3} justify="space-between">
               <Flex direction="column" align="flex-start" gap={0}>
                 <Flex align="center" gap={2}>

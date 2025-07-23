@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { notificationService } from '../services/thongbao';
+import { notificationService } from '../services/notificationService';
 
 export const useNotificationCount = (userId) => {
   const [unreadCount, setUnreadCount] = useState(0);

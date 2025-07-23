@@ -14,7 +14,7 @@ import {
   markGroupMessagesAsRead,
   thuHoiTinNhan,
   themThanhVien // <-- thêm import
-} from "../../services/tinNhan";
+} from "../../services/tinNhanService";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
@@ -147,7 +147,7 @@ const TinNhan = () => {
           idCuocTroChuyen: selectedId,
           tuKhoa: "",
           trang: 0,
-          kichThuoc: 50,
+          kichThuoc: 30,
         });
         setMessages(data);
       } catch (err) {
@@ -562,9 +562,9 @@ const TinNhan = () => {
   };
 
   return (
-    <div className="messenger-main-layout">
+    <div className="messenger-main-layout flex" style={{height: '100vh'}}>
       {/* Sidebar chat (danh sách chat) */}
-      <div className="messenger-sidebar-chat">
+      <div className="messenger-sidebar-chat" style={{width: 320, flexShrink: 0}}>
         <div className="messenger-profile">
           <img
             src={userInfo.anhDaiDien}
@@ -648,7 +648,7 @@ const TinNhan = () => {
         </div>
       </div>
       {/* Main chat area */}
-      <div className="messenger-main-chat">
+      <div className="messenger-main-chat flex-1 min-w-0">
         {!selectedId ? (
           <div className="messenger-empty">
             <div className="messenger-empty-title">Tin nhắn của bạn</div>

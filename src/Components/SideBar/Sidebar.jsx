@@ -211,186 +211,214 @@ const Sidebar = ({ isSearchVisible, setIsSearchVisible }) => {
   };
 
   return (
-    <div className="sticky top-0 h-[100vh] flex">
-      <div className={`flex flex-col justify-between h-full ${activeTab === "Search" ? "px-2" : "px-10"} w-[250px]`}>
-        {<div>
-          {activeTab !== "Search" && <div className="pt-10">
-            <img
-              className="w-40"
-              src="/toptrend.png"
-              alt=""
-            />
-          </div>}
-          <div className="mt-10">
-            {menu.map((item) => (
-              <div key={item.title} onClick={() => handleTabClick(item.title)} className="flex items-center mb-5 cursor-pointer text-lg relative whitespace-nowrap gap-x-2">
-                {activeTab === item.title ? item.activeIcon : item.icon}
-                {activeTab !== "Search" && <p className={`${activeTab === item.title ? "font-bold text-red-500" : "font-semyibold"}`}>{item.title}</p>}
-                {item.title === "Tin Nhắn" && unreadMessageCount > 0 && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-badge">
-                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-                  </div>
-                )}
-                {item.title === "Thông Báo" && unreadCount > 0 && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-badge">
-                    {unreadCount}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>}
-        <div className="flex items-center cursor-pointer pb-10">
-          <Menu>
-            <MenuButton as={Button} leftIcon={<FiSettings />} variant="ghost" width="100%" justifyContent="flex-start">
-              Cài Đặt
-            </MenuButton>
-            <MenuList>
-              <MenuItem onClick={handleShowPolicy}>Xem chính sách</MenuItem>
-              <MenuItem onClick={handleShowBlocked}>Đã chặn</MenuItem>
-              <MenuItem onClick={onChangePwOpen}>Đổi mật khẩu</MenuItem>
-              <MenuItem onClick={handleLogout} style={{ color: 'red' }}>Đăng xuất</MenuItem>
-            </MenuList>
-          </Menu>
-        </div>
-      </div>
-      {/* Modal hiển thị chính sách mới nhất */}
-      <Modal isOpen={isPolicyOpen} onClose={onPolicyClose} size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Chính sách mới nhất</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody maxH="70vh" overflowY="auto">
-            {policyLoading ? (
-              <div className="flex justify-center items-center py-8"><Spinner /></div>
-            ) : latestPolicy ? (
-              <div>
-                <h2 className="text-lg font-bold mb-2">{latestPolicy.tieuDe}</h2>
-                <div className="whitespace-pre-line border rounded p-2 bg-gray-50 mb-2">{latestPolicy.noiDung}</div>
-                <div className="text-xs text-gray-500">Cập nhật: {latestPolicy.ngayCapNhat ? new Date(latestPolicy.ngayCapNhat).toLocaleString() : ''}</div>
-              </div>
-            ) : (
-              <div className="text-center text-gray-500 py-8">Không tìm thấy chính sách nào.</div>
-            )}
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-      {/* Modal hiển thị danh sách đã chặn */}
-      <Modal isOpen={isBlockedOpen} onClose={onBlockedClose} size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Danh sách đã chặn</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody maxH="70vh" overflowY="auto">
-            {blockedLoading ? (
-              <div className="flex justify-center items-center py-8"><Spinner /></div>
-            ) : blockedList.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">Bạn chưa chặn ai.</div>
-            ) : (
-              <div className="space-y-3">
-                {blockedList.map(user => (
-                  <div key={user.id} className="flex items-center p-3 border rounded-lg hover:bg-gray-50">
-                    <img
-                      className="w-10 h-10 rounded-full object-cover"
-                      src={user.anhDaiDien || "/anhbandau.jpg"}
-                      alt={user.hoTen || "User"}
-                    />
-                    <div className="ml-3 flex-1">
-                      <p className="font-medium text-gray-900">{user.hoTen || "Username"}</p>
-                      <p className="text-sm text-gray-500">{user.email || "email@example.com"}</p>
+    <div>
+      {/* Sidebar dọc cho desktop */}
+      <div className="fixed top-0 left-0 h-screen z-40 w-[250px] flex-col justify-between hidden md:flex">
+        <div className={`flex flex-col justify-between h-full ${activeTab === "Search" ? "px-2" : "px-10"} w-[250px]`}>
+          {<div>
+            {activeTab !== "Search" && <div className="pt-10">
+              <img
+                className="w-40"
+                src="/toptrend.png"
+                alt=""
+              />
+            </div>}
+            <div className="mt-10">
+              {menu.map((item) => (
+                <div key={item.title} onClick={() => handleTabClick(item.title)} className="flex items-center mb-5 cursor-pointer text-lg relative whitespace-nowrap gap-x-2">
+                  {activeTab === item.title ? item.activeIcon : item.icon}
+                  {activeTab !== "Search" && <p className={`${activeTab === item.title ? "font-bold text-red-500" : "font-semyibold"}`}>{item.title}</p>}
+                  {item.title === "Tin Nhắn" && unreadMessageCount > 0 && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-badge">
+                      {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
                     </div>
-                    <Button colorScheme="blue" size="sm" onClick={() => handleUnblock(user.id)} isLoading={blockedRefreshing}>
-                      Bỏ chặn
-                    </Button>
-                  </div>
-                ))}
+                  )}
+                  {item.title === "Thông Báo" && unreadCount > 0 && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-badge">
+                      {unreadCount}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>}
+          <div className="flex items-center cursor-pointer pb-10">
+            <Menu>
+              <MenuButton as={Button} leftIcon={<FiSettings />} variant="ghost" width="100%" justifyContent="flex-start">
+                Cài Đặt
+              </MenuButton>
+              <MenuList>
+                <MenuItem onClick={handleShowPolicy}>Xem chính sách</MenuItem>
+                <MenuItem onClick={handleShowBlocked}>Đã chặn</MenuItem>
+                <MenuItem onClick={onChangePwOpen}>Đổi mật khẩu</MenuItem>
+                <MenuItem onClick={handleLogout} style={{ color: 'red' }}>Đăng xuất</MenuItem>
+              </MenuList>
+            </Menu>
+          </div>
+        </div>
+
+        {/* Modal hiển thị chính sách mới nhất */}
+        <Modal isOpen={isPolicyOpen} onClose={onPolicyClose} size="lg">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Chính sách mới nhất</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody maxH="70vh" overflowY="auto">
+              {policyLoading ? (
+                <div className="flex justify-center items-center py-8"><Spinner /></div>
+              ) : latestPolicy ? (
+                <div>
+                  <h2 className="text-lg font-bold mb-2">{latestPolicy.tieuDe}</h2>
+                  <div className="whitespace-pre-line border rounded p-2 bg-gray-50 mb-2">{latestPolicy.noiDung}</div>
+                  <div className="text-xs text-gray-500">Cập nhật: {latestPolicy.ngayCapNhat ? new Date(latestPolicy.ngayCapNhat).toLocaleString() : ''}</div>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">Không tìm thấy chính sách nào.</div>
+              )}
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+        {/* Modal hiển thị danh sách đã chặn */}
+        <Modal isOpen={isBlockedOpen} onClose={onBlockedClose} size="lg">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Danh sách đã chặn</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody maxH="70vh" overflowY="auto">
+              {blockedLoading ? (
+                <div className="flex justify-center items-center py-8"><Spinner /></div>
+              ) : blockedList.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">Bạn chưa chặn ai.</div>
+              ) : (
+                <div className="space-y-3">
+                  {blockedList.map(user => (
+                    <div key={user.id} className="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                      <img
+                        className="w-10 h-10 rounded-full object-cover"
+                        src={user.anhDaiDien || "/anhbandau.jpg"}
+                        alt={user.hoTen || "User"}
+                      />
+                      <div className="ml-3 flex-1">
+                        <p className="font-medium text-gray-900">{user.hoTen || "Username"}</p>
+                        <p className="text-sm text-gray-500">{user.email || "email@example.com"}</p>
+                      </div>
+                      <Button colorScheme="blue" size="sm" onClick={() => handleUnblock(user.id)} isLoading={blockedRefreshing}>
+                        Bỏ chặn
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+        {/* Modal đổi mật khẩu */}
+        <Modal isOpen={isChangePwOpen} onClose={onChangePwClose} isCentered size="sm">
+          <ModalOverlay />
+          <ModalContent borderRadius="lg" p={2}>
+            <ModalHeader fontWeight="bold" fontSize="xl" textAlign="center">Đổi mật khẩu</ModalHeader>
+            <ModalBody pb={4}>
+              <div style={{ position: 'relative', marginBottom: 16 }}>
+                <Input
+                  type="password"
+                  placeholder="Mật khẩu cũ"
+                  value={oldPassword}
+                  onChange={e => setOldPassword(e.target.value)}
+                  pr="40px"
+                  borderRadius="md"
+                  size="md"
+                />
               </div>
-            )}
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-      {/* Modal đổi mật khẩu */}
-      <Modal isOpen={isChangePwOpen} onClose={onChangePwClose} isCentered size="sm">
-        <ModalOverlay />
-        <ModalContent borderRadius="lg" p={2}>
-          <ModalHeader fontWeight="bold" fontSize="xl" textAlign="center">Đổi mật khẩu</ModalHeader>
-          <ModalBody pb={4}>
-            <div style={{ position: 'relative', marginBottom: 16 }}>
-              <Input
-                type="password"
-                placeholder="Mật khẩu cũ"
-                value={oldPassword}
-                onChange={e => setOldPassword(e.target.value)}
-                pr="40px"
-                borderRadius="md"
-                size="md"
-              />
-            </div>
-            <div style={{ position: 'relative', marginBottom: 16 }}>
-              <Input
-                type={showNewPw ? "text" : "password"}
-                placeholder="Mật khẩu mới"
-                value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                pr="48px"
-                borderRadius="md"
-                size="md"
-              />
-              <button
-                type="button"
-                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#888', fontSize: 18, background: 'none', border: 'none', padding: 0 }}
-                tabIndex={-1}
-                aria-label={showNewPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                onClick={() => setShowNewPw(v => !v)}
-              >
-                {showNewPw ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
-            <div style={{ position: 'relative', marginBottom: 8 }}>
-              <Input
-                type={showConfirmPw ? "text" : "password"}
-                placeholder="Xác nhận mật khẩu mới"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                pr="48px"
-                borderRadius="md"
-                size="md"
-              />
-              <button
-                type="button"
-                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#888', fontSize: 18, background: 'none', border: 'none', padding: 0 }}
-                tabIndex={-1}
-                aria-label={showConfirmPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                onClick={() => setShowConfirmPw(v => !v)}
-              >
-                {showConfirmPw ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" mr={3} onClick={handleChangePassword} isLoading={isChanging} borderRadius="md" px={6} fontWeight="bold">Đổi mật khẩu</Button>
-            <Button variant="ghost" onClick={onChangePwClose} borderRadius="md">Hủy</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-      <CreatePostModal onClose={onClose} isOpen={isOpen} />
-      <NotificationPanel 
-        onClose={onNotificationClose} 
-        isOpen={isNotificationOpen} 
-        userId={JSON.parse(localStorage.getItem('user') || '{}').id}
-        onShowPostModal={(post) => {
-          setPostDetail(post);
-          setShowPostModal(true);
-          onNotificationClose();
-        }}
-      />
-      {showPostModal && postDetail && (
-        <BaiDangChiTietModal
-          post={postDetail}
-          isOpen={showPostModal}
-          onClose={() => setShowPostModal(false)}
+              <div style={{ position: 'relative', marginBottom: 16 }}>
+                <Input
+                  type={showNewPw ? "text" : "password"}
+                  placeholder="Mật khẩu mới"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  pr="48px"
+                  borderRadius="md"
+                  size="md"
+                />
+                <button
+                  type="button"
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#888', fontSize: 18, background: 'none', border: 'none', padding: 0 }}
+                  tabIndex={-1}
+                  aria-label={showNewPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  onClick={() => setShowNewPw(v => !v)}
+                >
+                  {showNewPw ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+              <div style={{ position: 'relative', marginBottom: 8 }}>
+                <Input
+                  type={showConfirmPw ? "text" : "password"}
+                  placeholder="Xác nhận mật khẩu mới"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  pr="48px"
+                  borderRadius="md"
+                  size="md"
+                />
+                <button
+                  type="button"
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#888', fontSize: 18, background: 'none', border: 'none', padding: 0 }}
+                  tabIndex={-1}
+                  aria-label={showConfirmPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  onClick={() => setShowConfirmPw(v => !v)}
+                >
+                  {showConfirmPw ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button colorScheme="blue" mr={3} onClick={handleChangePassword} isLoading={isChanging} borderRadius="md" px={6} fontWeight="bold">Đổi mật khẩu</Button>
+              <Button variant="ghost" onClick={onChangePwClose} borderRadius="md">Hủy</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+        <CreatePostModal onClose={onClose} isOpen={isOpen} />
+        <NotificationPanel 
+          onClose={onNotificationClose} 
+          isOpen={isNotificationOpen} 
+          userId={JSON.parse(localStorage.getItem('user') || '{}').id}
+          onShowPostModal={(post) => {
+            setPostDetail(post);
+            setShowPostModal(true);
+            onNotificationClose();
+          }}
         />
-      )}
+        {showPostModal && postDetail && (
+          <BaiDangChiTietModal
+            post={postDetail}
+            isOpen={showPostModal}
+            onClose={() => setShowPostModal(false)}
+          />
+        )}
+      </div>
+
+      {/* Sidebar ngang cho mobile */}
+      <div className="fixed bottom-0 left-0 w-full flex md:hidden justify-around items-center bg-white shadow z-50 border-t">
+        {menu.map((item) => (
+          <div
+            key={item.title}
+            onClick={() => handleTabClick(item.title)}
+            className="flex flex-col items-center justify-center flex-1 py-2 cursor-pointer relative"
+          >
+            {activeTab === item.title ? item.activeIcon : item.icon}
+            {/* Badge cho Tin Nhắn và Thông Báo */}
+            {item.title === "Tin Nhắn" && unreadMessageCount > 0 && (
+              <span className="absolute top-1 right-3 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+              </span>
+            )}
+            {item.title === "Thông Báo" && unreadCount > 0 && (
+              <span className="absolute top-1 right-3 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

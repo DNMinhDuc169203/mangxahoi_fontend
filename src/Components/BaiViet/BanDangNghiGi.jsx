@@ -27,7 +27,7 @@ const BanDangNghiGi = () => {
   return (
     <>
       <div
-        className="flex items-center bg-white rounded-full px-4 py-2 shadow border w-full max-w-2xl cursor-pointer"
+        className="flex items-center bg-white rounded-full px-4 py-2 shadow border w-full cursor-pointer"
         onClick={onOpen}
       >
         <img

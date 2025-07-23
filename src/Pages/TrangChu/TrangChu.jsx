@@ -166,8 +166,8 @@ const HomePage = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <div className="mt-10 flex w-[100%] justify-center">
-        <div className="w-[44%] px-10">
+      <div className="mt-10 w-full flex flex-col md:flex-row">
+        <div className="w-full px-2 md:w-[70%] lg:w-[44%] md:px-10 mx-auto flex flex-col items-center">
           <div className="storyDiv flex space-x-2 border p-4 rounded-md justify-start w-full">
           
             <BanDangNghiGi/>
@@ -197,12 +197,12 @@ const HomePage = () => {
             {loadingMore && <div className="text-center py-4">Đang tải thêm...</div>}
           </div>
         </div>
-        <div className="w-[35%]">
+        <div className="hidden lg:block w-[35%]">
           <HomeRight/>
         </div>
       </div>
-
- 
+      {/* Thêm khoảng trống dưới cùng cho mobile để không bị che bởi thanh nav */}
+      <div className="block md:hidden h-16"></div>
     </div>
   );
 };

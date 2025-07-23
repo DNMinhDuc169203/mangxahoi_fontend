@@ -64,13 +64,22 @@ const Router = () => {
   if (location.pathname === "/forgot-password") {
     return <ForgotPassword />;
   }
-  return (
-    <div>
+  if (location.pathname === "/messages") {
+    return (
       <div className="flex">
-        {/* Sidebar luôn hiển thị */}
-        <div style={{ width: 88, minWidth: 88 }}>
+        <div className="w-[88px] md:w-[220px] min-w-[88px] md:min-w-[220px]" style={{ borderRight: '1px solid #e5e7eb' }}>
           <Sidebar isSearchVisible={isSearchVisible} setIsSearchVisible={setIsSearchVisible} />
         </div>
+        <div className="flex-1">
+          <TinNhan />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <Sidebar isSearchVisible={isSearchVisible} setIsSearchVisible={setIsSearchVisible} />
+      <div className="flex">
         {/* Panel search là panel cố định, không che sidebar */}
         {isSearchVisible && (
           <div style={{
@@ -87,7 +96,7 @@ const Router = () => {
         )}
         {isSearchVisible && <Backdrop onClick={() => setIsSearchVisible(false)} />}
         {/* Main content */}
-        <div style={{ flex: 1, marginLeft: 120 }}>
+        <div className="flex-1 ml-0 md:ml-[120px]">
           <Routes>
             <Route path="/" element={<HomePage />} > </Route>
             <Route path="/profile/:id" element={<ProfileWithId />} />

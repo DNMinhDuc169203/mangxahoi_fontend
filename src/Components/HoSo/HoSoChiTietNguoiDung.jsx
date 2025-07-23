@@ -24,6 +24,13 @@ import {
 import { EditIcon, SettingsIcon } from "@chakra-ui/icons";
 import MutualFriendsModal from '../TrangChuPhai/danhsachbanchung';
 
+
+// function formatDate(isoDate) {
+//   if (!isoDate) return "";
+//   const [year, month, day] = isoDate.split("-");
+//   return `${day}/${month}/${year}`;
+// }
+
 export const ProfileUserDetails = ({ userId }) => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
@@ -275,23 +282,24 @@ export const ProfileUserDetails = ({ userId }) => {
 
   return (
     <div className="py-10">
-      <div className="flex items-center">
-        <div className="w-[15%]" 
-          {...(isOwnProfile ? { className: "w-[15%] cursor-pointer", onClick: onAvatarOpen } : {})}
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-0">
+        <div 
+          className="w-32 h-32 flex-shrink-0 flex items-center justify-center cursor-pointer"
+          onClick={isOwnProfile ? onAvatarOpen : undefined}
         >
           <img
-            className="w-32 h-32 rounded-full"
+            className="w-32 h-32 rounded-full object-cover border-2 border-gray-200"
             src={user.anhDaiDien || "/anhbandau.jpg"}
             alt="Ảnh đại diện"
           />
         </div>
-        <div className="space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-10">
-              <p className="font-bold text-xl">{user.hoTen || "Chưa cập nhật"}</p>
+        <div className="flex-1 w-full space-y-5 mt-4 md:mt-0 md:ml-8">
+          <div className="flex flex-col md:flex-row items-center md:items-center justify-between w-full gap-4 md:gap-0">
+            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-10 w-full">
+              <p className="font-bold text-xl text-center md:text-left">{user.hoTen || "Chưa cập nhật"}</p>
               {/* Các nút thao tác */}
               {isOwnProfile ? (
-                <>
+                <div className="flex space-x-2">
                   <IconButton
                     aria-label="Chỉnh sửa thông tin"
                     icon={<EditIcon />}
@@ -304,9 +312,9 @@ export const ProfileUserDetails = ({ userId }) => {
                     onClick={onPrivacyOpen}
                     colorScheme="gray"
                   />
-                </>
+                </div>
               ) : (
-                <>
+                <div className="flex space-x-2">
                   {isBlocked ? (
                     <>
                       <Button colorScheme="red" disabled>Đã chặn</Button>
@@ -461,12 +469,12 @@ export const ProfileUserDetails = ({ userId }) => {
                       }
                     }}>Kết bạn</Button>
                   )}
-                </>
+                </div>
               )}
             </div>
             {/* Bạn chung sang phải */}
             {!isOwnProfile && mutualFriends.length > 0 && (
-              <div className="flex items-center space-x-2 ml-4">
+              <div className="flex items-center space-x-2 ml-0 md:ml-4">
                 <span
                   className="text-blue-600 underline cursor-pointer text-sm"
                   onClick={() => setShowMutualModal(true)}
@@ -480,15 +488,15 @@ export const ProfileUserDetails = ({ userId }) => {
                       key={friend.id}
                       src={friend.anhDaiDien || "/anhbandau.jpg"}
                       alt={friend.hoTen}
-                      className="w-7 h-7 rounded-full border -ml-2 first:ml-0"
+                      className="w-7 h-7 rounded-full border -ml-2 first:ml-0 object-cover"
                     />
                   ))}
                 </div>
               </div>
             )}
           </div>
-          <p className="text-gray-600">{user.tieuSu || "Chưa có tiểu sử. Bạn có thể cập nhật trong phần chỉnh sửa."}</p>
-          <div className="grid grid-cols-2 gap-x-10 gap-y-1 mt-2">
+          <p className="text-gray-600 text-center md:text-left">{user.tieuSu || "Chưa có tiểu sử. Bạn có thể cập nhật trong phần chỉnh sửa."}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-1 mt-2">
             {privacySettings.emailCongKhai && <div><span className="font-semibold">Email:</span> {user.email || "Chưa cập nhật"}</div>}
             {privacySettings.sdtCongKhai && <div><span className="font-semibold">Số điện thoại:</span> {user.soDienThoai || "Chưa cập nhật"}</div>}
             {privacySettings.ngaySinhCongKhai && <div><span className="font-semibold">Ngày sinh:</span> {user.ngaySinh || "Chưa cập nhật"}</div>}
