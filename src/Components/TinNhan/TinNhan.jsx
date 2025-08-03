@@ -81,6 +81,13 @@ const TinNhan = () => {
   const [addMemberError, setAddMemberError] = useState("");
   const [showMemberListModal, setShowMemberListModal] = useState(false);
   const navigate = useNavigate();
+  const [showKickMemberModal, setShowKickMemberModal] = useState(false);
+  const [kickMemberIds, setKickMemberIds] = useState([]);
+  const [showLeaveGroupModal, setShowLeaveGroupModal] = useState(false);
+  const [showDeleteGroupModal, setShowDeleteGroupModal] = useState(false);
+  const [kickMemberError, setKickMemberError] = useState("");
+  const [leaveGroupError, setLeaveGroupError] = useState("");
+  const [deleteGroupError, setDeleteGroupError] = useState("");
 
   // Đóng modal khi click ra ngoài
   useEffect(() => {
@@ -561,6 +568,10 @@ const TinNhan = () => {
     setSelectedAddMemberIds(prev => prev.includes(id) ? prev.filter(fid => fid !== id) : [...prev, id]);
   };
 
+  // Xác định quyền trưởng nhóm/quản trị viên
+  const isTruongNhom = isGroup && userInfo.id === selectedConv?.idTruongNhom;
+  const isAdmin = isGroup && selectedConv?.danhSachThanhVien?.find(m => m.id === userInfo.id)?.vaiTro === "quan_tri";
+
   return (
     <div className="messenger-main-layout flex" style={{height: '100vh'}}>
       {/* Sidebar chat (danh sách chat) */}
@@ -677,6 +688,13 @@ const TinNhan = () => {
                 <div className="messenger-header-modal" ref={headerModalRef}>
                   {isGroup ? (
                     <>
+                      {(isTruongNhom || isAdmin) && (
+                        <button onClick={() => { setShowHeaderModal(false); setShowKickMemberModal(true); }}>Xóa thành viên</button>
+                      )}
+                      {isTruongNhom && (
+                        <button onClick={() => { setShowHeaderModal(false); setShowDeleteGroupModal(true); }}>Xóa nhóm</button>
+                      )}
+                      <button onClick={() => { setShowHeaderModal(false); setShowLeaveGroupModal(true); }}>Rời nhóm</button>
                       <button onClick={() => { setShowHeaderModal(false); setShowMemberListModal(true); }}>Danh sách thành viên</button>
                       <button onClick={() => { setShowHeaderModal(false); setShowAddMemberModal(true); }}>Thêm Thành viên</button>
                       <button onClick={() => { setShowHeaderModal(false); setShowSearchMessageModal(true); }}>Tìm kiếm tin nhắn</button>
@@ -744,6 +762,15 @@ const TinNhan = () => {
 
                   // Khi render từng tin nhắn:
                   const showGroupSeen = isGroup && idx === lastReadMsgIdx && msg.danhSachNguoiDoc && msg.danhSachNguoiDoc.length > 0;
+
+                  // Nếu là tin nhắn thong_bao thì hiển thị đặc biệt
+                  if (msg.loaiTinNhan === "thong_bao") {
+                    return (
+                      <div key={msg.idTinNhan} style={{ textAlign: "center", color: "#888", fontStyle: "italic", margin: "12px 0" }}>
+                        {msg.noiDung}
+                      </div>
+                    );
+                  }
 
                   return (
                     <div
@@ -1181,6 +1208,123 @@ const TinNhan = () => {
                 ))}
               </ul>
               <button style={{ width: '100%', marginTop: 8 }} onClick={() => setShowMemberListModal(false)}>Đóng</button>
+            </div>
+          </div>
+        )}
+        {showKickMemberModal && (
+          <div className="modal-overlay" onClick={() => { setShowKickMemberModal(false); setKickMemberIds([]); setKickMemberError(""); }}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <span>Xóa thành viên khỏi nhóm</span>
+                <button className="modal-close" onClick={() => { setShowKickMemberModal(false); setKickMemberIds([]); setKickMemberError(""); }}>×</button>
+              </div>
+              <div className="modal-body">
+                <div>Chọn thành viên cần xóa:</div>
+                <ul style={{maxHeight: 200, overflowY: 'auto', margin: '10px 0'}}>
+                  {(selectedConv?.danhSachThanhVien || [])
+                    .filter(m => m.id !== userInfo.id)
+                    .map(member => (
+                    <li key={member.id} style={{display: 'flex', alignItems: 'center', marginBottom: 6}}>
+                      <img src={member.anhDaiDien || "./anhbandau.jpg"} alt={member.hoTen} style={{width: 32, height: 32, borderRadius: "50%", marginRight: 8}} />
+                      <span>{member.hoTen}</span>
+                      <input
+                        type="checkbox"
+                        checked={kickMemberIds.includes(member.id)}
+                        onChange={() => setKickMemberIds(prev => prev.includes(member.id) ? prev.filter(id => id !== member.id) : [...prev, member.id])}
+                        style={{marginLeft: "auto"}}
+                      />
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  style={{width: '100%', marginTop: 8}}
+                  disabled={kickMemberIds.length === 0}
+                  onClick={async () => {
+                    setKickMemberError("");
+                    try {
+                      const token = localStorage.getItem("token");
+                      for (const idNguoiBiXoa of kickMemberIds) {
+                        await axios.post("http://localhost:8080/network/api/tinnhan/cuoc-tro-chuyen/xoa-thanh-vien", {
+                          idCuocTroChuyen: selectedConv.idCuocTroChuyen || selectedConv.id,
+                          idNguoiBiXoa
+                        }, { headers: { Authorization: `Bearer ${token}` } });
+                      }
+                      setShowKickMemberModal(false);
+                      setKickMemberIds([]);
+                      // Reload lại nhóm hoặc cập nhật UI nếu muốn
+                      window.location.reload();
+                    } catch (err) {
+                      setKickMemberError("Xóa thành viên thất bại!");
+                    }
+                  }}
+                >Xóa</button>
+                {kickMemberError && <div style={{color: "red", marginTop: 8}}>{kickMemberError}</div>}
+                <button style={{width: '100%', marginTop: 8}} onClick={() => { setShowKickMemberModal(false); setKickMemberIds([]); setKickMemberError(""); }}>Đóng</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showLeaveGroupModal && (
+          <div className="modal-overlay" onClick={() => { setShowLeaveGroupModal(false); setLeaveGroupError(""); }}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <span>Rời nhóm</span>
+                <button className="modal-close" onClick={() => { setShowLeaveGroupModal(false); setLeaveGroupError(""); }}>×</button>
+              </div>
+              <div className="modal-body">
+                <div>Bạn có chắc chắn muốn rời nhóm không?</div>
+                <button
+                  style={{width: '100%', marginTop: 8, background: '#e53935', color: '#fff'}}
+                  onClick={async () => {
+                    setLeaveGroupError("");
+                    try {
+                      const token = localStorage.getItem("token");
+                      await axios.post("http://localhost:8080/network/api/tinnhan/cuoc-tro-chuyen/roi-nhom", {
+                        idCuocTroChuyen: selectedConv.idCuocTroChuyen || selectedConv.id
+                      }, { headers: { Authorization: `Bearer ${token}` } });
+                      setShowLeaveGroupModal(false);
+                      // Chuyển về trang chủ hoặc reload lại danh sách nhóm
+                      window.location.reload();
+                    } catch (err) {
+                      setLeaveGroupError("Rời nhóm thất bại!");
+                    }
+                  }}
+                >Xác nhận rời nhóm</button>
+                {leaveGroupError && <div style={{color: "red", marginTop: 8}}>{leaveGroupError}</div>}
+                <button style={{width: '100%', marginTop: 8}} onClick={() => { setShowLeaveGroupModal(false); setLeaveGroupError(""); }}>Đóng</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showDeleteGroupModal && (
+          <div className="modal-overlay" onClick={() => { setShowDeleteGroupModal(false); setDeleteGroupError(""); }}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <span>Xóa nhóm</span>
+                <button className="modal-close" onClick={() => { setShowDeleteGroupModal(false); setDeleteGroupError(""); }}>×</button>
+              </div>
+              <div className="modal-body">
+                <div style={{color: "#e53935", fontWeight: 600}}>Bạn có chắc chắn muốn xóa nhóm này? Hành động này không thể hoàn tác!</div>
+                <button
+                  style={{width: '100%', marginTop: 8, background: '#e53935', color: '#fff'}}
+                  onClick={async () => {
+                    setDeleteGroupError("");
+                    try {
+                      const token = localStorage.getItem("token");
+                      await axios.post("http://localhost:8080/network/api/tinnhan/cuoc-tro-chuyen/xoa-nhom", {
+                        idCuocTroChuyen: selectedConv.idCuocTroChuyen || selectedConv.id
+                      }, { headers: { Authorization: `Bearer ${token}` } });
+                      setShowDeleteGroupModal(false);
+                      // Chuyển về trang chủ hoặc reload lại danh sách nhóm
+                      window.location.reload();
+                    } catch (err) {
+                      setDeleteGroupError("Xóa nhóm thất bại!");
+                    }
+                  }}
+                >Xác nhận xóa nhóm</button>
+                {deleteGroupError && <div style={{color: "red", marginTop: 8}}>{deleteGroupError}</div>}
+                <button style={{width: '100%', marginTop: 8}} onClick={() => { setShowDeleteGroupModal(false); setDeleteGroupError(""); }}>Đóng</button>
+              </div>
             </div>
           </div>
         )}

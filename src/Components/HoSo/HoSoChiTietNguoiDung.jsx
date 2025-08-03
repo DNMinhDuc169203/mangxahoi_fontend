@@ -47,7 +47,7 @@ export const ProfileUserDetails = ({ userId }) => {
     gioiTinhCongKhai: true,
   });
   const [isOwnProfile, setIsOwnProfile] = useState(false);
-  const [friendStatus, setFriendStatus] = useState(null); // null, 'friend', 'pending', 'none'
+  const [friendStatus, setFriendStatus] = useState(null); // null, 'friend', 'none'', 'pending
   const [receivedRequest, setReceivedRequest] = useState(null); // {idLoiMoi, ...} nếu có lời mời đã nhận
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [unfriendConfirmOpen, setUnfriendConfirmOpen] = useState(false);
