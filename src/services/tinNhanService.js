@@ -49,6 +49,31 @@ export async function thuHoiTinNhan(data) {
   return res.data;
 }
 
+export async function xoaTinNhan(idTinNhan, idCuocTroChuyen) {
+  const res = await axios.post(`${API_BASE}/tin-nhan/xoa`, {
+    idTinNhan,
+    idCuocTroChuyen
+  }, {
+    headers: {
+      ...getAuthHeader(),
+      "Content-Type": "application/json"
+    }
+  });
+  return res.data;
+}
+
+export async function xoaToanBoTinNhan(idCuocTroChuyen) {
+  const res = await axios.post(`${API_BASE}/tin-nhan/xoa-toan-bo`, {
+    idCuocTroChuyen
+  }, {
+    headers: {
+      ...getAuthHeader(),
+      "Content-Type": "application/json"
+    }
+  });
+  return res.data;
+}
+
 export async function timKiemTinNhan(data) {
   const res = await axios.post(`${API_BASE}/tin-nhan/tim-kiem`, data, {
     headers: {

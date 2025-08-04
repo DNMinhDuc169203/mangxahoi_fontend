@@ -13,6 +13,8 @@ import {
   markMessagesAsRead,
   markGroupMessagesAsRead,
   thuHoiTinNhan,
+  xoaTinNhan,
+  xoaToanBoTinNhan,
   themThanhVien // <-- thêm import
 } from "../../services/tinNhanService";
 import axios from "axios";
@@ -700,7 +702,28 @@ const TinNhan = () => {
                       <button onClick={() => { setShowHeaderModal(false); setShowSearchMessageModal(true); }}>Tìm kiếm tin nhắn</button>
                     </>
                   ) : (
-                    <button onClick={() => { setShowHeaderModal(false); setShowSearchMessageModal(true); }}>Tìm kiếm tin nhắn</button>
+                    <>
+                      <button onClick={() => { setShowHeaderModal(false); setShowSearchMessageModal(true); }}>Tìm kiếm tin nhắn</button>
+                      <button 
+                        onClick={async () => { 
+                          setShowHeaderModal(false); 
+                          try {
+                            await xoaToanBoTinNhan(selectedId);
+                            setMessages([]);
+                            // Xóa cuộc trò chuyện khỏi danh sách
+                            setConversations(prev => prev.filter(conv => (conv.idCuocTroChuyen || conv.id) !== selectedId));
+                            setSelectedId(null);
+                          } catch (err) {
+                            alert('Xóa toàn bộ tin nhắn thất bại!');
+                          }
+                        }}
+                        style={{
+                          color: '#e53935'
+                        }}
+                      >
+                        Xóa toàn bộ tin nhắn
+                      </button>
+                    </>
                   )}
                 </div>
               )}
@@ -878,6 +901,29 @@ const TinNhan = () => {
                               >
                                 Thu hồi tin nhắn
                               </button>
+                              {/* <button
+                                style={{
+                                  width: '100%',
+                                  background: 'none',
+                                  color: '#e53935',
+                                  border: 'none',
+                                  padding: '8px 12px',
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                  fontSize: 13
+                                }}
+                                onClick={async () => {
+                                  setShowRecallMenuMsgId(null);
+                                  try {
+                                    await xoaTinNhan(msg.idTinNhan, selectedId);
+                                    setMessages(prevMsgs => prevMsgs.filter(m => m.idTinNhan !== msg.idTinNhan));
+                                  } catch (err) {
+                                    alert('Xóa tin nhắn thất bại!');
+                                  }
+                                }}
+                              >
+                                Xóa tin nhắn
+                              </button> */}
                             </div>
                           )}
                         </div>
