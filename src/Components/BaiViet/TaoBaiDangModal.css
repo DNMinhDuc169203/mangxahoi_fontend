@@ -1,13 +1,15 @@
 .drag-drop{
  display: flex;
  flex-direction: column;
- justify-content: center;
+ justify-content: flex-start;
  align-items: center;
- padding: 2rem;
+ padding: 1rem;
  font-size: 1.2rem;
  color: #999;
  border-radius: 5px;
  cursor: pointer;
+ min-height: 400px;
+ overflow-y: auto;
 }
 .drag-drop p{
     margin: 0 0 1rem;
@@ -37,6 +39,7 @@ input[type="file"]{
     outline: none;
     resize: none;
     font-size: small;
+    min-height: 120px;
 }
 .locationInput{
     border: none;

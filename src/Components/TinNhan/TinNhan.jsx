@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import "./TinNhan.css";
 import { BsEmojiSmile } from "react-icons/bs";
 import { BiImageAlt } from "react-icons/bi";
+import { HiMenu } from "react-icons/hi"; // Thêm icon menu
+import { IoClose } from "react-icons/io5"; // Thêm icon close
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 import {
@@ -90,6 +92,36 @@ const TinNhan = () => {
   const [kickMemberError, setKickMemberError] = useState("");
   const [leaveGroupError, setLeaveGroupError] = useState("");
   const [deleteGroupError, setDeleteGroupError] = useState("");
+  
+  // Thêm state cho mobile responsive
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Kiểm tra kích thước màn hình
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Đóng mobile menu khi chọn cuộc trò chuyện
+  useEffect(() => {
+    if (selectedId && isMobile) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [selectedId, isMobile]);
+
+  // Đóng mobile menu khi resize từ mobile sang desktop
+  useEffect(() => {
+    if (!isMobile) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [isMobile]);
 
   // Đóng modal khi click ra ngoài
   useEffect(() => {
@@ -575,90 +607,132 @@ const TinNhan = () => {
   const isAdmin = isGroup && selectedConv?.danhSachThanhVien?.find(m => m.id === userInfo.id)?.vaiTro === "quan_tri";
 
   return (
-    <div className="messenger-main-layout flex" style={{height: '100vh'}}>
+    <div className="messenger-main-layout flex" style={{height: '90vh'}}>
       {/* Sidebar chat (danh sách chat) */}
-      <div className="messenger-sidebar-chat" style={{width: 320, flexShrink: 0}}>
-        <div className="messenger-profile">
-          <img
-            src={userInfo.anhDaiDien}
-            alt="Your avatar"
-            className="messenger-profile-avatar"
-            onError={e => { e.target.onerror = null; e.target.src = "./anhbandau.jpg"; }}
-          />
-          <div className="messenger-profile-name">{userInfo.hoTen || ""}</div>
-        </div>
-        <div className="messenger-search">
-          <input type="text" placeholder="Tìm kiếm" />
-        </div>
-        <div className="messenger-tabs">
-          <span className="active" style={{position: 'relative', display: 'inline-block'}}>
-            Tin nhắn
-            {totalUnread > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: -8,
-                right: -18,
-                background: 'red',
-                color: '#fff',
-                borderRadius: '50%',
-                fontSize: 12,
-                minWidth: 18,
-                height: 18,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0 5px',
-                fontWeight: 600,
-                zIndex: 1
-              }}>
-                {totalUnread > 99 ? '99+' : totalUnread}
-              </span>
-            )}
-          </span>
-        </div>
-        <div className="messenger-list">
-          {conversations.map((conv) => {
-            const isGroupItem = conv.loai === "nhom";
-            // Lấy nội dung tin nhắn cuối cùng từ backend
-            let lastMsg = "";
-            if (conv.lastMessageType === "hinh_anh") lastMsg = "[Hình ảnh]";
-            else if (conv.lastMessageType === "video") lastMsg = "[Video]";
-            else lastMsg = conv.lastMessageContent || "";
-            // Hiển thị tên người gửi nếu là nhóm
-            let lastMsgSender = "";
-            if (isGroupItem && conv.lastMessageSenderName) {
-              lastMsgSender = conv.lastMessageSenderName + ": ";
-            }
-            // Hiển thị thời gian tin nhắn cuối
-            let lastMsgTime = "";
-            if (conv.lastMessageTime) {
-              lastMsgTime = formatTimeAgo(conv.lastMessageTime);
-            }
-            // Xác định có tin nhắn chưa đọc không
-            const isUnread = conv.unreadCount > 0;
-            return (
-              <div
-                key={conv.idCuocTroChuyen || conv.id}
-                className={`messenger-item${selectedId === (conv.idCuocTroChuyen || conv.id) ? " active" : ""}${isUnread ? " unread" : ""}`}
-                onClick={() => setSelectedId(conv.idCuocTroChuyen || conv.id)}
-              >
+      <div className={`messenger-sidebar-chat ${isMobile && isMobileMenuOpen ? 'mobile-expanded' : ''}`} style={{width: isMobile ? '100%' : 320, flexShrink: 0}}>
+        {/* Mobile header với nút menu */}
+        {isMobile && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0 15px',
+            height: '60px',
+            borderBottom: '1px solid #eee',
+            background: '#fff'
+          }}>
+            <div style={{display: 'flex', alignItems: 'center'}}>
+              <img
+                src={userInfo.anhDaiDien}
+                alt="Your avatar"
+                className="messenger-profile-avatar"
+                onError={e => { e.target.onerror = null; e.target.src = "./anhbandau.jpg"; }}
+              />
+              <div className="messenger-profile-name" style={{marginLeft: '10px'}}>{userInfo.hoTen || ""}</div>
+            </div>
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                color: '#666'
+              }}
+            >
+              {isMobileMenuOpen ? <IoClose /> : <HiMenu />}
+            </button>
+          </div>
+        )}
+        
+        {/* Desktop profile hoặc mobile expanded content */}
+        {(!isMobile || isMobileMenuOpen) && (
+          <>
+            {!isMobile && (
+              <div className="messenger-profile">
                 <img
-                  src={isGroupItem ? (conv.anhNhom || "./anhbandau.jpg") : (conv.anhDaiDienDoiPhuong || "./anhbandau.jpg")}
-                  alt={isGroupItem ? conv.tenNhom : conv.tenDoiPhuong || "avatar"}
-                  className="messenger-avatar"
+                  src={userInfo.anhDaiDien}
+                  alt="Your avatar"
+                  className="messenger-profile-avatar"
+                  onError={e => { e.target.onerror = null; e.target.src = "./anhbandau.jpg"; }}
                 />
-                <div>
-                  <div className="messenger-name" style={isUnread ? {fontWeight: 'bold', color: '#1877f2'} : {}}>{isGroupItem ? conv.tenNhom : conv.tenDoiPhuong || "Người dùng"}</div>
-                  <div className="messenger-last">{lastMsgSender}{lastMsg}</div>
-                </div>
-                <div className="messenger-time">
-                  {lastMsgTime}
-                  {isUnread && <span className="unread-dot"> ●</span>}
-                </div>
+                <div className="messenger-profile-name">{userInfo.hoTen || ""}</div>
               </div>
-            );
-          })}
-        </div>
+            )}
+            <div className="messenger-search">
+              <input type="text" placeholder="Tìm kiếm" />
+            </div>
+            <div className="messenger-tabs">
+              <span className="active" style={{position: 'relative', display: 'inline-block'}}>
+                Tin nhắn
+                {totalUnread > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -18,
+                    background: 'red',
+                    color: '#fff',
+                    borderRadius: '50%',
+                    fontSize: 12,
+                    minWidth: 18,
+                    height: 18,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 5px',
+                    fontWeight: 600,
+                    zIndex: 1
+                  }}>
+                    {totalUnread > 99 ? '99+' : totalUnread}
+                  </span>
+                )}
+              </span>
+            </div>
+            <div className="messenger-list">
+              {conversations.map((conv) => {
+                const isGroupItem = conv.loai === "nhom";
+                // Lấy nội dung tin nhắn cuối cùng từ backend
+                let lastMsg = "";
+                if (conv.lastMessageType === "hinh_anh") lastMsg = "[Hình ảnh]";
+                else if (conv.lastMessageType === "video") lastMsg = "[Video]";
+                else lastMsg = conv.lastMessageContent || "";
+                // Hiển thị tên người gửi nếu là nhóm
+                let lastMsgSender = "";
+                if (isGroupItem && conv.lastMessageSenderName) {
+                  lastMsgSender = conv.lastMessageSenderName + ": ";
+                }
+                // Hiển thị thời gian tin nhắn cuối
+                let lastMsgTime = "";
+                if (conv.lastMessageTime) {
+                  lastMsgTime = formatTimeAgo(conv.lastMessageTime);
+                }
+                // Xác định có tin nhắn chưa đọc không
+                const isUnread = conv.unreadCount > 0;
+                return (
+                  <div
+                    key={conv.idCuocTroChuyen || conv.id}
+                    className={`messenger-item${selectedId === (conv.idCuocTroChuyen || conv.id) ? " active" : ""}${isUnread ? " unread" : ""}`}
+                    onClick={() => setSelectedId(conv.idCuocTroChuyen || conv.id)}
+                  >
+                    <img
+                      src={isGroupItem ? (conv.anhNhom || "./anhbandau.jpg") : (conv.anhDaiDienDoiPhuong || "./anhbandau.jpg")}
+                      alt={isGroupItem ? conv.tenNhom : conv.tenDoiPhuong || "avatar"}
+                      className="messenger-avatar"
+                    />
+                    <div>
+                      <div className="messenger-name" style={isUnread ? {fontWeight: 'bold', color: '#1877f2'} : {}}>{isGroupItem ? conv.tenNhom : conv.tenDoiPhuong || "Người dùng"}</div>
+                      <div className="messenger-last">{lastMsgSender}{lastMsg}</div>
+                    </div>
+                    <div className="messenger-time">
+                      {lastMsgTime}
+                      {isUnread && <span className="unread-dot"> ●</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
       {/* Main chat area */}
       <div className="messenger-main-chat flex-1 min-w-0">
@@ -673,6 +747,22 @@ const TinNhan = () => {
         ) : (
           <div className="messenger-chat">
             <div className="messenger-chat-header">
+              {/* Mobile back button */}
+              {isMobile && (
+                <button
+                  onClick={() => setSelectedId(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '1.2rem',
+                    cursor: 'pointer',
+                    color: '#666',
+                    marginRight: '10px'
+                  }}
+                >
+                  ←
+                </button>
+              )}
               <img
                 src={isGroup ? (selectedConv?.anhNhom || "./anhbandau.jpg") : (selectedConv?.anhDaiDienDoiPhuong || "./anhbandau.jpg")}
                 alt={isGroup ? selectedConv?.tenNhom : selectedConv?.tenDoiPhuong || "avatar"}
@@ -1375,6 +1465,22 @@ const TinNhan = () => {
           </div>
         )}
       </div>
+      
+      {/* Mobile overlay để đóng menu */}
+      {isMobile && isMobileMenuOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 999
+          }}
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
     </div>
   );
 };

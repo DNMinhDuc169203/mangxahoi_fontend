@@ -26,6 +26,7 @@ const CreatePostModal = ({ onClose, isOpen }) => {
   const [user, setUser] = useState(null);
   const toast = useToast();
   const [showEmoji, setShowEmoji] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleDrop = (event) => {
     event.preventDefault();
@@ -70,6 +71,7 @@ const CreatePostModal = ({ onClose, isOpen }) => {
   };
 
   const handleShare = async () => {
+    setIsLoading(true);
     const formData = new FormData();
     formData.append("noiDung", caption);
     // Map giá trị privacy sang đúng enum backend nếu cần
@@ -103,7 +105,16 @@ const CreatePostModal = ({ onClose, isOpen }) => {
       if (onClose) onClose();
       window.location.reload();
     } catch (err) {
-      alert(err.message || "Có lỗi xảy ra khi tạo bài viết");
+      toast({
+        title: "Có lỗi xảy ra khi tạo bài viết",
+        description: err.message || "Vui lòng thử lại sau",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+        position: "top"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -142,18 +153,20 @@ const CreatePostModal = ({ onClose, isOpen }) => {
               variant={"ghost"}
               size="sm"
               colorScheme={"Black"}
-              disabled={(!caption || caption.trim().length === 0) && files.length === 0}
-              opacity={((!caption || caption.trim().length === 0) && files.length === 0) ? 0.5 : 1}
+              disabled={((!caption || caption.trim().length === 0) && files.length === 0) || isLoading}
+              opacity={((!caption || caption.trim().length === 0) && files.length === 0) || isLoading ? 0.5 : 1}
               onClick={handleShare}
+              isLoading={isLoading}
+              loadingText="Đang tạo..."
             >
-              Share
+              {isLoading ? "Đang tạo..." : "Tạo"}
             </Button>
           </div>
           <hr />
 
           <ModalBody>
             <div className="h-[70vh] justify-between pb-5 flex">
-              <div className="w-[50%]">
+              <div className="w-[50%] overflow-hidden">
                 <div
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
@@ -175,9 +188,9 @@ const CreatePostModal = ({ onClose, isOpen }) => {
                     multiple
                     onChange={handleOnChange}
                   />
-                  <div className="flex flex-wrap mt-2">
+                  <div className="flex flex-wrap mt-2 gap-2 max-h-60 overflow-y-auto">
                     {files.map((file, idx) => (
-                      <div key={idx} className="relative inline-block mr-2 mb-2">
+                      <div key={idx} className="relative inline-block">
                         <button
                           type="button"
                           onClick={() => handleRemoveFile(idx)}
@@ -189,13 +202,13 @@ const CreatePostModal = ({ onClose, isOpen }) => {
                         </button>
                         {file.type.startsWith("image/") ? (
                           <img
-                            className="max-h-24"
+                            className="w-20 h-20 object-cover rounded"
                             src={URL.createObjectURL(file)}
                             alt=""
                           />
                         ) : (
                           <video
-                            className="max-h-24"
+                            className="w-20 h-20 object-cover rounded"
                             src={URL.createObjectURL(file)}
                             controls
                           />

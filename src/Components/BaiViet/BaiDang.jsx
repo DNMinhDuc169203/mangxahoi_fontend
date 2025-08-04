@@ -345,9 +345,9 @@ const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdat
                 alt=""
                 style={{ maxHeight: 400 }}
               />
-            ) : (
+            ) : post.mediaUrls.length === 2 ? (
               <div className="grid grid-cols-2 gap-1 rounded-md overflow-hidden" style={{ maxHeight: 400 }}>
-                {post.mediaUrls.slice(0, 4).map((url, idx) => (
+                {post.mediaUrls.map((url, idx) => (
                   <img
                     key={idx}
                     src={url}
@@ -356,11 +356,48 @@ const PostCard = ({ post, onLikePost, onCommentAdded, onPostDeleted, onPostUpdat
                     style={{ aspectRatio: '1/1', objectFit: 'cover' }}
                   />
                 ))}
-                {post.mediaUrls.length > 4 && (
-                  <div className="flex items-center justify-center bg-black bg-opacity-60 text-white text-lg font-bold absolute w-full h-full top-0 left-0">
-                    +{post.mediaUrls.length - 4}
+              </div>
+            ) : post.mediaUrls.length === 3 ? (
+              <div className="grid grid-cols-3 gap-1 rounded-md overflow-hidden" style={{ maxHeight: 400 }}>
+                {post.mediaUrls.map((url, idx) => (
+                  <img
+                    key={idx}
+                    src={url}
+                    alt=""
+                    className="object-cover w-full h-40"
+                    style={{ aspectRatio: '1/1', objectFit: 'cover' }}
+                  />
+                ))}
+              </div>
+            ) : post.mediaUrls.length === 4 ? (
+              <div className="grid grid-cols-2 gap-1 rounded-md overflow-hidden" style={{ maxHeight: 400 }}>
+                {post.mediaUrls.map((url, idx) => (
+                  <img
+                    key={idx}
+                    src={url}
+                    alt=""
+                    className="object-cover w-full h-40"
+                    style={{ aspectRatio: '1/1', objectFit: 'cover' }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-1 rounded-md overflow-hidden" style={{ maxHeight: 400 }}>
+                {post.mediaUrls.slice(0, 6).map((url, idx) => (
+                  <div key={idx} className="relative">
+                    <img
+                      src={url}
+                      alt=""
+                      className="object-cover w-full h-32"
+                      style={{ aspectRatio: '1/1', objectFit: 'cover' }}
+                    />
+                    {idx === 5 && post.mediaUrls.length > 6 && (
+                      <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white text-lg font-bold">
+                        +{post.mediaUrls.length - 6}
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
             )
           ) : (

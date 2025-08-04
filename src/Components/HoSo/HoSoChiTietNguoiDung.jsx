@@ -54,6 +54,8 @@ export const ProfileUserDetails = ({ userId }) => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [mutualFriends, setMutualFriends] = useState([]);
   const [showMutualModal, setShowMutualModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const fetchUser = () => {
     const token = localStorage.getItem("token") || "";
@@ -164,6 +166,7 @@ export const ProfileUserDetails = ({ userId }) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    setIsUploading(true);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("laAnhChinh", true);
@@ -194,6 +197,8 @@ export const ProfileUserDetails = ({ userId }) => {
         isClosable: true,
         position: "top",
       });
+    } finally {
+      setIsUploading(false);
     }
   };
   
@@ -209,6 +214,7 @@ export const ProfileUserDetails = ({ userId }) => {
         onAvatarClose();
         return;
     }
+    setIsRemoving(true);
     const token = localStorage.getItem("token") || "";
     if (!token || !user?.id) return;
     try {
@@ -242,6 +248,8 @@ export const ProfileUserDetails = ({ userId }) => {
             isClosable: true,
             position: "top",
           });
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -523,11 +531,11 @@ export const ProfileUserDetails = ({ userId }) => {
                   <option value="khac">Khác</option>
                 </Select>
                 <Input name="diaChi" value={editForm.diaChi || ""} onChange={handleEditChange} placeholder="Địa chỉ" />
-                <Select name="mucRiengTu" value={editForm.mucRiengTu || ""} onChange={handleEditChange}>
+                {/* <Select name="mucRiengTu" value={editForm.mucRiengTu || ""} onChange={handleEditChange}>
                   <option value="cong_khai">Công khai</option>
                   <option value="ban_be">Bạn bè</option>
                   <option value="rieng_tu">Riêng tư</option>
-                </Select>
+                </Select> */}
               </div>
             )}
           </ModalBody>
@@ -590,13 +598,37 @@ export const ProfileUserDetails = ({ userId }) => {
         <ModalContent>
           <ModalHeader textAlign="center">Thay đổi ảnh đại diện</ModalHeader>
           <VStack spacing={0} divider={<Box h="1px" bg="gray.200" w="full" />}>
-            <Button variant="ghost" colorScheme="blue" w="full" py={6} onClick={() => fileInputRef.current.click()}>
-              Tải ảnh lên
+            <Button 
+              variant="ghost" 
+              colorScheme="blue" 
+              w="full" 
+              py={6} 
+              onClick={() => fileInputRef.current.click()}
+              isLoading={isUploading}
+              loadingText="Đang tải ảnh..."
+              disabled={isUploading || isRemoving}
+            >
+              {isUploading ? "Đang tải ảnh..." : "Tải ảnh lên"}
             </Button>
-            <Button variant="ghost" colorScheme="red" w="full" py={6} onClick={handleRemovePhoto}>
-              Gỡ ảnh hiện tại
+            <Button 
+              variant="ghost" 
+              colorScheme="red" 
+              w="full" 
+              py={6} 
+              onClick={handleRemovePhoto}
+              isLoading={isRemoving}
+              loadingText="Đang gỡ ảnh..."
+              disabled={isUploading || isRemoving}
+            >
+              {isRemoving ? "Đang gỡ ảnh..." : "Gỡ ảnh hiện tại"}
             </Button>
-            <Button variant="ghost" w="full" py={6} onClick={onAvatarClose}>
+            <Button 
+              variant="ghost" 
+              w="full" 
+              py={6} 
+              onClick={onAvatarClose}
+              disabled={isUploading || isRemoving}
+            >
               Hủy
             </Button>
           </VStack>
