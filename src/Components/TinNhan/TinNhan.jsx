@@ -266,6 +266,8 @@ const TinNhan = () => {
         stompClient.subscribe("/topic/tin-nhan", (message) => {
           console.log("Received message on /topic/tin-nhan:", message.body);
           const msg = JSON.parse(message.body);
+          console.log(msg);
+          
           // Luôn cập nhật conversations (đẩy lên đầu)
           setConversations(prev => {
             const idx = prev.findIndex(
@@ -292,13 +294,24 @@ const TinNhan = () => {
             const newList = [updatedConv, ...prev.filter((_, i) => i !== idx)];
             return newList;
           });
+          
           // Chỉ cập nhật messages nếu đang mở đúng cuộc trò chuyện
           if (msg.idCuocTroChuyen === selectedId) {
             setMessages((prev) => {
               if (prev.some(m => m.idTinNhan === msg.idTinNhan)) return prev;
-              return [...prev, msg];
+              
+              // Đảm bảo tin nhắn có đầy đủ thông tin người gửi
+              const enhancedMsg = {
+                ...msg,
+                tenNguoiGui: msg.tenNguoiGui || (msg.idNguoiGui === userInfo.id ? userInfo.hoTen : "Người dùng"),
+                anhNguoiGui: msg.anhNguoiGui || (msg.idNguoiGui === userInfo.id ? userInfo.anhDaiDien : "./anhbandau.jpg")
+              };
+              
+              
+              return [...prev, enhancedMsg];
             });
-            // Gọi API đánh dấu đã đọc nếu là chat cá nhân
+            
+            // Gọi API đánh dấu đã đọc
             const selectedConv = conversations.find(c => (c.idCuocTroChuyen || c.id) === selectedId);
             const isGroup = selectedConv?.loai === "nhom";
             if (!isGroup) {
@@ -374,7 +387,13 @@ const TinNhan = () => {
         noiDung: messageInput,
         loaiTinNhan,
         urlTepTin: urlTepTin,
+        tenNguoiGui: userInfo.hoTen,
+        anhNguoiGui: userInfo.anhDaiDien,
       };
+      console.log("Gửibef");
+      
+      console.log(msg);
+      
       console.log("Gửi tin nhắn:", msg);
       if (stompClientRef.current && stompClientRef.current.connected) {
         stompClientRef.current.publish({
@@ -1086,9 +1105,16 @@ const TinNhan = () => {
                 type="text"
                 placeholder="Gõ một tin nhắn..."
                 value={messageInput}
+                autoFocus
                 onChange={(e) => {
                   setMessageInput(e.target.value);
                   setError(""); // Reset lỗi khi gõ lại
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
                 }}
                 disabled={sending}
               />
